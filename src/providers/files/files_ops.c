@@ -72,6 +72,7 @@ static errno_t enum_files_users(TALLOC_CTX *mem_ctx,
         goto done;
     }
 
+    DEBUG(SSSDBG_TRACE_LIBS, "Enumerating passwd file: %s\n", passwd_file);
     while ((pwd_iter = fgetpwent(pwd_handle)) != NULL) {
         /* FIXME - we might want to support paging of sorts to avoid allocating
          * all users atop a memory context or only return users that differ from
@@ -170,6 +171,7 @@ static errno_t enum_files_groups(TALLOC_CTX *mem_ctx,
         goto done;
     }
 
+    DEBUG(SSSDBG_TRACE_LIBS, "Enumerating group file: %s\n", group_file);
     while ((grp_iter = fgetgrent(grp_handle)) != NULL) {
         DEBUG(SSSDBG_TRACE_LIBS,
               "Group found (%s, %"SPRIgid")\n",
@@ -274,9 +276,95 @@ static errno_t delete_all_users(struct sss_domain_info *dom)
     }
 
     ret = EOK;
+    DEBUG(SSSDBG_TRACE_LIBS, "All users deleted from database\n");
 
 done:
     talloc_free(tmp_ctx);
+
+    return ret;
+}
+
+static errno_t delete_non_existing_users(struct files_id_ctx *id_ctx)
+{
+    TALLOC_CTX *tmp_ctx = NULL;
+    TALLOC_CTX *tmp_ctx_users = NULL;
+    TALLOC_CTX *tmp_ctx_whitelist = NULL;
+    struct ldb_dn *base_dn;
+    struct passwd **users = NULL;
+    const char **whitelist = NULL;
+    errno_t ret;
+
+    //----------------------------------------------------------
+    tmp_ctx_users = talloc_new(NULL);
+    if (tmp_ctx_users == NULL) {
+        DEBUG(SSSDBG_FATAL_FAILURE, "Out of memory!\n");
+        return ENOMEM;
+    }
+
+    /* Process password files to get existing users */
+    for (size_t i = 0; id_ctx->passwd_files[i] != NULL; i++) {
+        ret = enum_files_users(tmp_ctx_users, id_ctx, id_ctx->passwd_files[i], &users);
+        if (ret != EOK) {
+            goto done;
+        }
+    }
+
+    tmp_ctx_whitelist = talloc_new(NULL);
+    if (tmp_ctx_whitelist == NULL) {
+        DEBUG(SSSDBG_FATAL_FAILURE, "Out of memory!\n");
+        return ENOMEM;
+    }
+
+    int users_num = 0;
+    while (users[users_num]) {
+        users_num++;
+    }
+    DEBUG(SSSDBG_TRACE_LIBS, "Users whitelist size: %d\n", users_num);
+
+    whitelist = talloc_zero_array(tmp_ctx_whitelist, const char *, users_num + 1);
+    if (whitelist == NULL) {
+        goto done;
+    }
+
+    for (size_t i = 0; users[i]; i++) {
+        whitelist[i] = users[i]->pw_name;
+        DEBUG(SSSDBG_TRACE_LIBS, "Name added to whitelist: %s\n", whitelist[i]);
+    }
+    //----------------------------------------------------------
+
+    tmp_ctx = talloc_new(NULL);
+    if (tmp_ctx == NULL) {
+        DEBUG(SSSDBG_FATAL_FAILURE, "Out of memory!\n");
+        return ENOMEM;
+    }
+
+    base_dn = sysdb_user_base_dn(tmp_ctx, id_ctx->domain);
+    if (base_dn == NULL) {
+        DEBUG(SSSDBG_CRIT_FAILURE, "Out of memory!\n");
+        ret = ENOMEM;
+        goto done;
+    }
+
+    //----------------------------------------------------------
+    ret = sysdb_delete_recursive_with_whitelist(id_ctx->domain->sysdb,
+                                                base_dn,
+                                                true,
+                                                whitelist);
+    //ret = sysdb_delete_recursive(id_ctx->domain->sysdb, base_dn, true);
+    if (ret != EOK) {
+        DEBUG(SSSDBG_OP_FAILURE, "Unable to delete users subtree [%d]: %s\n",
+              ret, sss_strerror(ret));
+        goto done;
+    }
+    //----------------------------------------------------------
+
+    ret = EOK;
+    DEBUG(SSSDBG_TRACE_LIBS, "Non existing users deleted from database\n");
+
+done:
+    talloc_free(tmp_ctx);
+    talloc_free(tmp_ctx_whitelist);
+    talloc_free(tmp_ctx_users);
 
     return ret;
 }
@@ -554,6 +642,7 @@ static errno_t delete_all_groups(struct sss_domain_info *dom)
     }
 
     ret = EOK;
+    DEBUG(SSSDBG_TRACE_LIBS, "All groups deleted from database\n");
 
 done:
     talloc_free(tmp_ctx);
@@ -726,8 +815,15 @@ static errno_t sf_enum_files(struct files_id_ctx *id_ctx,
     }
     in_transaction = true;
 
+    DEBUG(SSSDBG_TRACE_INTERNAL, "TRACE_INTERNAL---------------------------\n");
+    DEBUG(SSSDBG_OP_FAILURE, "OP_FAILURE---------------------------\n");
+    DEBUG(SSSDBG_CRIT_FAILURE, "CRIT_FAILURE---------------------------\n");
+    DEBUG(SSSDBG_TRACE_LIBS, "TRACE_LIBS---------------------------\n");
+    DEBUG(SSSDBG_TRACE_FUNC, "TRACE_FUNC---------------------------\n");
+    DEBUG(SSSDBG_TRACE_ALL, "TRACE_ALL---------------------------\n");
+
     if (flags & SF_UPDATE_PASSWD) {
-        ret = delete_all_users(id_ctx->domain);
+        ret = delete_non_existing_users(id_ctx);
         if (ret != EOK) {
             goto done;
         }
