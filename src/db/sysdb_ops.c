@@ -157,7 +157,7 @@ static int sysdb_delete_cache_entry(struct ldb_context *ldb,
         /* fall through */
         SSS_ATTRIBUTE_FALLTHROUGH;
     default:
-        DEBUG(SSSDBG_CRIT_FAILURE, "LDB Error: %s(%d)\nError Message: [%s]\n",
+        DEBUG(SSSDBG_CRIT_FAILURE, "LDB Error: %s (%d); error message: [%s]\n",
                   ldb_strerror(ret), ret, ldb_errstring(ldb));
         return sysdb_error_to_errno(ret);
     }
@@ -3412,7 +3412,7 @@ int sysdb_search_custom(TALLOC_CTX *mem_ctx,
         goto done;
     }
     if (!ldb_dn_validate(basedn)) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Failed to create DN.\n");
+        DEBUG(SSSDBG_CRIT_FAILURE, "Syntactically invalid subtree DN.\n");
         ret = EINVAL;
         goto done;
     }
@@ -3455,7 +3455,7 @@ int sysdb_search_custom_by_name(TALLOC_CTX *mem_ctx,
         goto done;
     }
     if (!ldb_dn_validate(basedn)) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Failed to create DN.\n");
+        DEBUG(SSSDBG_CRIT_FAILURE, "Syntactically invalid DN.\n");
         ret = EINVAL;
         goto done;
     }
@@ -3537,7 +3537,7 @@ errno_t sysdb_search_by_orig_dn(TALLOC_CTX *mem_ctx,
     default:
         DEBUG(SSSDBG_CRIT_FAILURE,
               "Trying to perform a search by orig_dn using a "
-              "non-supported type\n");
+              "non-supported type %d\n", type);
         ret = EINVAL;
         goto done;
     }
@@ -3682,8 +3682,9 @@ int sysdb_delete_custom(struct sss_domain_info *domain,
         break;
 
     default:
-        DEBUG(SSSDBG_CRIT_FAILURE, "LDB Error: %s(%d)\nError Message: [%s]\n",
-                  ldb_strerror(ret), ret, ldb_errstring(domain->sysdb->ldb));
+        DEBUG(SSSDBG_CRIT_FAILURE,
+              "ldb_delete failed: %s (%d); error Message: [%s]\n",
+              ldb_strerror(ret), ret, ldb_errstring(domain->sysdb->ldb));
         ret = sysdb_error_to_errno(ret);
         break;
     }
@@ -4919,9 +4920,15 @@ static errno_t sysdb_update_members_ex(struct sss_domain_info *domain,
             ret = sysdb_add_group_member(domain, add_groups[i],
                                          member, type, is_dn);
             if (ret != EOK) {
-                DEBUG(SSSDBG_CRIT_FAILURE,
-                      "Could not add member [%s] to group [%s]. "
-                          "Skipping.\n", member, add_groups[i]);
+                if (ret != EEXIST) {
+                    DEBUG(SSSDBG_CRIT_FAILURE,
+                          "Could not add member [%s] to group [%s]. "
+                              "Skipping.\n", member, add_groups[i]);
+                } else {
+                    DEBUG(SSSDBG_FUNC_DATA,
+                          "Group [%s] already has member [%s]. Skipping.\n",
+                          add_groups[i], member);
+                }
                 /* Continue on, we should try to finish the rest */
             }
         }
@@ -4933,9 +4940,15 @@ static errno_t sysdb_update_members_ex(struct sss_domain_info *domain,
             ret = sysdb_remove_group_member(domain, del_groups[i],
                                             member, type, is_dn);
             if (ret != EOK) {
-                DEBUG(SSSDBG_CRIT_FAILURE,
-                      "Could not remove member [%s] from group [%s]. "
-                          "Skipping\n", member, del_groups[i]);
+                if (ret != ENOENT) {
+                    DEBUG(SSSDBG_CRIT_FAILURE,
+                          "Could not remove member [%s] from group [%s]. "
+                              "Skipping\n", member, del_groups[i]);
+                } else {
+                    DEBUG(SSSDBG_FUNC_DATA,
+                          "No member [%s] in group [%s]. "
+                              "Skipping\n", member, del_groups[i]);
+                }
                 /* Continue on, we should try to finish the rest */
             }
         }

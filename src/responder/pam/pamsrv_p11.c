@@ -425,7 +425,7 @@ bool may_do_cert_auth(struct pam_ctx *pctx, struct pam_data *pd)
         }
     }
     if (pctx->smartcard_services[c] == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        DEBUG(SSSDBG_CONF_SETTINGS,
               "Smartcard authentication for service [%s] not supported.\n",
               pd->service);
         return false;
@@ -810,7 +810,7 @@ struct tevent_req *pam_check_cert_send(TALLOC_CTX *mem_ctx,
     } else if (pd->cmd == SSS_PAM_PREAUTH) {
         extra_args[arg_c++] = "--pre";
     } else {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Unexpected PAM command [%d}.\n", pd->cmd);
+        DEBUG(SSSDBG_CRIT_FAILURE, "Unexpected PAM command [%d].\n", pd->cmd);
         ret = EINVAL;
         goto done;
     }
