@@ -28,27 +28,6 @@
 #include "util/util.h"
 #include "util/probes.h"
 
-struct dp_req {
-    struct data_provider *provider;
-    uint32_t dp_flags;
-
-    struct sss_domain_info *domain;
-
-    enum dp_targets target;
-    enum dp_methods method;
-    struct dp_method *execute;
-    const char *name;
-    uint32_t num;
-
-    struct tevent_req *req;
-    struct tevent_req *handler_req;
-    void *request_data;
-
-    /* Active request list. */
-    struct dp_req *prev;
-    struct dp_req *next;
-};
-
 static bool check_data_type(const char *expected,
                             const char *description,
                             void *ptr)
