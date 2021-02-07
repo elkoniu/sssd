@@ -77,7 +77,7 @@ struct tevent_req *sdap_sudo_full_refresh_send(TALLOC_CTX *mem_ctx,
         goto immediately;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "Issuing a full refresh of sudo rules\n");
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Issuing a full refresh of sudo rules\n");
 
     subreq = sdap_sudo_refresh_send(state, sudo_ctx, search_filter,
                                     delete_filter, true);
@@ -119,14 +119,14 @@ static void sdap_sudo_full_refresh_done(struct tevent_req *subreq)
     /* save the time in the sysdb */
     ret = sysdb_sudo_set_last_full_refresh(state->domain, time(NULL));
     if (ret != EOK) {
-        DEBUG(SSSDBG_MINOR_FAILURE, "Unable to save time of "
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "Unable to save time of "
                                     "a successful full refresh\n");
         /* this is only a minor error that does not affect the functionality,
          * therefore there is no need to report it with tevent_req_error()
          * which would cause problems in the consumers */
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "Successful full refresh of sudo rules\n");
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Successful full refresh of sudo rules\n");
 
 done:
     if (ret != EOK) {
@@ -173,7 +173,7 @@ struct tevent_req *sdap_sudo_smart_refresh_send(TALLOC_CTX *mem_ctx,
 
     req = tevent_req_create(mem_ctx, &state, struct sdap_sudo_smart_refresh_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -182,7 +182,7 @@ struct tevent_req *sdap_sudo_smart_refresh_send(TALLOC_CTX *mem_ctx,
 
     /* Download all rules from LDAP that are newer than usn */
     if (srv_opts == NULL || srv_opts->max_sudo_value == 0) {
-        DEBUG(SSSDBG_TRACE_FUNC, "USN value is unknown, assuming zero.\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "USN value is unknown, assuming zero.\n");
         usn = "0";
         search_filter = talloc_asprintf(state, "(%s=%s)",
                                         map[SDAP_AT_SUDO_OC].name,
@@ -202,7 +202,7 @@ struct tevent_req *sdap_sudo_smart_refresh_send(TALLOC_CTX *mem_ctx,
     /* Do not remove any rules that are already in the sysdb
      * sysdb_filter = NULL; */
 
-    DEBUG(SSSDBG_TRACE_FUNC, "Issuing a smart refresh of sudo rules "
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Issuing a smart refresh of sudo rules "
                              "(USN >= %s)\n", usn);
 
     subreq = sdap_sudo_refresh_send(state, sudo_ctx, search_filter, NULL, true);
@@ -241,7 +241,7 @@ static void sdap_sudo_smart_refresh_done(struct tevent_req *subreq)
         goto done;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "Successful smart refresh of sudo rules\n");
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Successful smart refresh of sudo rules\n");
 
 done:
     if (ret != EOK) {
@@ -302,7 +302,7 @@ struct tevent_req *sdap_sudo_rules_refresh_send(TALLOC_CTX *mem_ctx,
 
     req = tevent_req_create(mem_ctx, &state, struct sdap_sudo_rules_refresh_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
         return NULL;
     }
 

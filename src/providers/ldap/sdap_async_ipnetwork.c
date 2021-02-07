@@ -66,7 +66,7 @@ sdap_get_ipnetwork_send(TALLOC_CTX *mem_ctx,
 
     req = tevent_req_create(mem_ctx, &state, struct sdap_get_ipnetwork_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -86,7 +86,7 @@ sdap_get_ipnetwork_send(TALLOC_CTX *mem_ctx,
     state->enumeration = enumeration;
 
     if (state->search_bases == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
                 "IP network lookup request without a search base\n");
         ret = EINVAL;
         goto done;
@@ -121,7 +121,7 @@ sdap_get_ipnetwork_next_base(struct tevent_req *req)
         return ENOMEM;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC,
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
             "Searching for IP network with base [%s]\n",
             state->search_bases[state->base_iter]->basedn);
 
@@ -172,7 +172,7 @@ sdap_get_ipnetwork_process(struct tevent_req *subreq)
         return;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "Search for IP networks returned %zu results.\n",
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Search for IP networks returned %zu results.\n",
           count);
 
     if (state->enumeration || count == 0) {
@@ -224,12 +224,12 @@ sdap_get_ipnetwork_process(struct tevent_req *subreq)
                                state->entries, state->num_entries,
 			       &state->higher_usn);
     if (ret != EOK) {
-        DEBUG(SSSDBG_MINOR_FAILURE, "Failed to store IP networks.\n");
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "Failed to store IP networks.\n");
         tevent_req_error(req, ret);
         return;
     }
 
-    DEBUG(SSSDBG_TRACE_INTERNAL, "Saved %zu IP networks\n", state->num_entries);
+    BE_REQ_DEBUG(SSSDBG_TRACE_INTERNAL, req, "Saved %zu IP networks\n", state->num_entries);
 
     tevent_req_done(req);
 }
@@ -546,7 +546,7 @@ enum_ipnetworks_send(TALLOC_CTX *memctx,
                 id_ctx->opts->ipnetwork_map[SDAP_AT_IPNETWORK_NUMBER].name);
     }
     if (!state->filter) {
-        DEBUG(SSSDBG_MINOR_FAILURE, "Failed to build base filter\n");
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "Failed to build base filter\n");
         ret = ENOMEM;
         goto fail;
     }
@@ -611,7 +611,7 @@ enum_ipnetworks_op_done(struct tevent_req *subreq)
         }
     }
 
-    DEBUG(SSSDBG_FUNC_DATA, "IP network higher USN value: [%s]\n",
+    BE_REQ_DEBUG(SSSDBG_FUNC_DATA, req, "IP network higher USN value: [%s]\n",
               state->id_ctx->srv_opts->max_ipnetwork_value);
 
     tevent_req_done(req);

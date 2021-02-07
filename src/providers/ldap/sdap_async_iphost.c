@@ -85,7 +85,7 @@ sdap_get_iphost_send(TALLOC_CTX *mem_ctx,
     state->enumeration = enumeration;
 
     if (state->search_bases == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
                 "IP host lookup request without a search base\n");
         ret = EINVAL;
         goto done;
@@ -120,7 +120,7 @@ sdap_get_iphost_next_base(struct tevent_req *req)
         return ENOMEM;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC,
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
             "Searching for IP host with base [%s]\n",
             state->search_bases[state->base_iter]->basedn);
 
@@ -169,7 +169,7 @@ sdap_get_iphost_process(struct tevent_req *subreq)
         return;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "Search for IP hosts returned %zu results.\n",
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Search for IP hosts returned %zu results.\n",
           count);
 
     if (state->enumeration || count == 0) {
@@ -220,12 +220,12 @@ sdap_get_iphost_process(struct tevent_req *subreq)
     ret = sdap_save_iphosts(state, state->sysdb, state->dom, state->opts,
                             state->iphosts, state->count, &state->higher_usn);
     if (ret != EOK) {
-        DEBUG(SSSDBG_MINOR_FAILURE, "Failed to store IP hosts.\n");
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "Failed to store IP hosts.\n");
         tevent_req_error(req, ret);
         return;
     }
 
-    DEBUG(SSSDBG_TRACE_INTERNAL, "Saved %zu IP hosts\n", state->count);
+    BE_REQ_DEBUG(SSSDBG_TRACE_INTERNAL, req, "Saved %zu IP hosts\n", state->count);
 
     tevent_req_done(req);
 }
@@ -560,7 +560,7 @@ enum_iphosts_send(TALLOC_CTX *memctx,
                 id_ctx->opts->iphost_map[SDAP_AT_IPHOST_NUMBER].name);
     }
     if (!state->filter) {
-        DEBUG(SSSDBG_MINOR_FAILURE, "Failed to build base filter\n");
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "Failed to build base filter\n");
         ret = ENOMEM;
         goto fail;
     }
@@ -626,7 +626,7 @@ enum_iphosts_op_done(struct tevent_req *subreq)
         }
     }
 
-    DEBUG(SSSDBG_FUNC_DATA, "IP host higher USN value: [%s]\n",
+    BE_REQ_DEBUG(SSSDBG_FUNC_DATA, req, "IP host higher USN value: [%s]\n",
               state->id_ctx->srv_opts->max_iphost_value);
 
     tevent_req_done(req);

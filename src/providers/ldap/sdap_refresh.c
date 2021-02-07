@@ -84,10 +84,10 @@ static struct tevent_req *sdap_refresh_send(TALLOC_CTX *mem_ctx,
 
     ret = sdap_refresh_step(req);
     if (ret == EOK) {
-        DEBUG(SSSDBG_TRACE_FUNC, "Nothing to refresh\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Nothing to refresh\n");
         goto immediately;
     } else if (ret != EAGAIN) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "sdap_refresh_step() failed "
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "sdap_refresh_step() failed "
                                    "[%d]: %s\n", ret, sss_strerror(ret));
         goto immediately;
     }
@@ -124,7 +124,7 @@ static errno_t sdap_refresh_step(struct tevent_req *req)
         goto done;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "Issuing refresh of %s %s\n",
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Issuing refresh of %s %s\n",
           be_req2str(state->account_req->entry_type),
           state->account_req->filter_value);
 
@@ -160,7 +160,7 @@ static void sdap_refresh_done(struct tevent_req *subreq)
     ret = sdap_handle_acct_req_recv(subreq, &dp_error, &err_msg, &sdap_ret);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Unable to refresh %s [dp_error: %d, "
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Unable to refresh %s [dp_error: %d, "
               "sdap_ret: %d, errno: %d]: %s\n",
                be_req2str(state->account_req->entry_type),
               dp_error, sdap_ret, ret, err_msg);
@@ -171,7 +171,7 @@ static void sdap_refresh_done(struct tevent_req *subreq)
         ret = sysdb_set_initgr_expire_timestamp(state->domain,
                                                 state->account_req->filter_value);
         if (ret != EOK) {
-            DEBUG(SSSDBG_MINOR_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
                   "Failed to set initgroups expiration for [%s]\n",
                   state->account_req->filter_value);
         }

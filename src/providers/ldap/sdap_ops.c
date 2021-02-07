@@ -74,7 +74,7 @@ sdap_search_bases_ex_send(TALLOC_CTX *mem_ctx,
     }
 
     if (bases == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "No search base specified!\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "No search base specified!\n");
         ret = ERR_INTERNAL;
         goto immediately;
     }
@@ -108,7 +108,7 @@ sdap_search_bases_ex_send(TALLOC_CTX *mem_ctx,
         ret = build_attrs_from_map(state, state->map, state->map_num_attrs,
                                    NULL, &state->attrs, NULL);
         if (ret != EOK) {
-            DEBUG(SSSDBG_OP_FAILURE, "Unable to build attrs from map "
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Unable to build attrs from map "
                   "[%d]: %s\n", ret, sss_strerror(ret));
             goto immediately;
         }
@@ -154,7 +154,7 @@ static errno_t sdap_search_bases_ex_next_base(struct tevent_req *req)
 
     base_dn = state->base_dn != NULL ? state->base_dn : state->cur_base->basedn;
 
-    DEBUG(SSSDBG_TRACE_FUNC, "Issuing LDAP lookup with base [%s]\n", base_dn);
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Issuing LDAP lookup with base [%s]\n", base_dn);
 
     subreq = sdap_get_generic_send(state, state->ev, state->opts, state->sh,
                                    base_dn, state->cur_base->scope, filter,
@@ -183,7 +183,7 @@ static void sdap_search_bases_ex_done(struct tevent_req *subreq)
     req = tevent_req_callback_data(subreq, struct tevent_req);
     state = tevent_req_data(req, struct sdap_search_bases_ex_state);
 
-    DEBUG(SSSDBG_TRACE_FUNC, "Receiving data from base [%s]\n",
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Receiving data from base [%s]\n",
                              state->cur_base->basedn);
 
     ret = sdap_get_generic_recv(subreq, state, &count, &attrs);
@@ -347,13 +347,13 @@ sdap_deref_bases_ex_send(TALLOC_CTX *mem_ctx,
     }
 
     if (bases == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "No search base specified!\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "No search base specified!\n");
         ret = ERR_INTERNAL;
         goto immediately;
     }
 
     if (maps == NULL || attrs == NULL || deref_attr == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "No attributes or map specified!\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "No attributes or map specified!\n");
         ret = ERR_INTERNAL;
         goto immediately;
     }
@@ -407,7 +407,7 @@ static errno_t sdap_deref_bases_ex_next_base(struct tevent_req *req)
         return EOK;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "Issuing LDAP deref lookup with base [%s]\n",
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Issuing LDAP deref lookup with base [%s]\n",
                              state->cur_base->basedn);
 
     subreq = sdap_deref_search_with_filter_send(state, state->ev, state->opts,
@@ -436,7 +436,7 @@ static void sdap_deref_bases_ex_done(struct tevent_req *subreq)
     req = tevent_req_callback_data(subreq, struct tevent_req);
     state = tevent_req_data(req, struct sdap_deref_bases_ex_state);
 
-    DEBUG(SSSDBG_TRACE_FUNC, "Receiving data from base [%s]\n",
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Receiving data from base [%s]\n",
                              state->cur_base->basedn);
 
     ret = sdap_deref_search_with_filter_recv(subreq, state, &count, &attrs);

@@ -65,13 +65,13 @@ sdap_sudo_load_sudoers_send(TALLOC_CTX *mem_ctx,
 
     sb = opts->sdom->sudo_search_bases;
     if (sb == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "SUDOERS lookup request without a search base\n");
         ret = EINVAL;
         goto immediately;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "About to fetch sudo rules\n");
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "About to fetch sudo rules\n");
 
     subreq = sdap_search_bases_send(state, ev, opts, sh, sb,
                                     opts->sudorule_map, true, 0,
@@ -111,7 +111,7 @@ static void sdap_sudo_load_sudoers_done(struct tevent_req *subreq)
         return;
     }
 
-    DEBUG(SSSDBG_FUNC_DATA, "Received %zu sudo rules\n",
+    BE_REQ_DEBUG(SSSDBG_FUNC_DATA, req, "Received %zu sudo rules\n",
           state->num_rules);
 
     tevent_req_done(req);
@@ -331,7 +331,7 @@ struct tevent_req *sdap_sudo_refresh_send(TALLOC_CTX *mem_ctx,
 
     state->sdap_op = sdap_id_op_create(state, id_ctx->conn->conn_cache);
     if (!state->sdap_op) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_id_op_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_id_op_create() failed\n");
         ret = ENOMEM;
         goto immediately;
     }
@@ -375,7 +375,7 @@ static errno_t sdap_sudo_refresh_retry(struct tevent_req *req)
 
     subreq = sdap_id_op_connect_send(state->sdap_op, state, &ret);
     if (subreq == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "sdap_id_op_connect_send() failed: "
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "sdap_id_op_connect_send() failed: "
                                    "%d(%s)\n", ret, strerror(ret));
         return ret;
     }
@@ -399,14 +399,14 @@ static void sdap_sudo_refresh_connect_done(struct tevent_req *subreq)
     talloc_zfree(subreq);
 
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "SUDO LDAP connection failed "
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "SUDO LDAP connection failed "
                                    "[%d]: %s\n", ret, strerror(ret));
         state->dp_error = dp_error;
         tevent_req_error(req, ret);
         return;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "SUDO LDAP connection successful\n");
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "SUDO LDAP connection successful\n");
 
     /* Renew host information if needed. */
     if (state->sudo_ctx->run_hostinfo) {
@@ -446,7 +446,7 @@ static void sdap_sudo_refresh_hostinfo_done(struct tevent_req *subreq)
                                       &sudo_ctx->ip_addr);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "Unable to retrieve host information, "
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Unable to retrieve host information, "
                                  "host filter will be disabled [%d]: %s\n",
                                  ret, sss_strerror(ret));
         sudo_ctx->use_host_filter = false;
@@ -608,7 +608,7 @@ static void sdap_sudo_refresh_done(struct tevent_req *subreq)
         return;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "Received %zu rules\n", rules_count);
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Received %zu rules\n", rules_count);
 
     /* Save users and groups fully qualified */
     ret = sdap_sudo_qualify_names(state->domain, rules, rules_count);
@@ -619,7 +619,7 @@ static void sdap_sudo_refresh_done(struct tevent_req *subreq)
     /* start transaction */
     ret = sysdb_transaction_start(state->sysdb);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Failed to start transaction\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Failed to start transaction\n");
         goto done;
     }
     in_transaction = true;
@@ -640,12 +640,12 @@ static void sdap_sudo_refresh_done(struct tevent_req *subreq)
     /* commit transaction */
     ret = sysdb_transaction_commit(state->sysdb);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Failed to commit transaction\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Failed to commit transaction\n");
         goto done;
     }
     in_transaction = false;
 
-    DEBUG(SSSDBG_TRACE_FUNC, "Sudoers is successfully stored in cache\n");
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Sudoers is successfully stored in cache\n");
 
     if (state->update_usn) {
         /* remember new usn */
@@ -653,7 +653,7 @@ static void sdap_sudo_refresh_done(struct tevent_req *subreq)
         if (ret == EOK) {
             sdap_sudo_set_usn(state->sudo_ctx->id_ctx->srv_opts, usn);
         } else {
-            DEBUG(SSSDBG_MINOR_FAILURE, "Unable to get highest USN [%d]: %s\n",
+            BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "Unable to get highest USN [%d]: %s\n",
                   ret, sss_strerror(ret));
         }
     }
@@ -665,7 +665,7 @@ done:
     if (in_transaction) {
         sret = sysdb_transaction_cancel(state->sysdb);
         if (sret != EOK) {
-            DEBUG(SSSDBG_CRIT_FAILURE, "Could not cancel transaction\n");
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Could not cancel transaction\n");
         }
     }
 
