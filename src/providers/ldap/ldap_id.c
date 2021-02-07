@@ -192,7 +192,7 @@ struct tevent_req *users_get_send(TALLOC_CTX *memctx,
 
     state->op = sdap_id_op_create(state, state->conn->conn_cache);
     if (!state->op) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_id_op_create failed\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_id_op_create failed\n");
         ret = ENOMEM;
         goto done;
     }
@@ -273,7 +273,7 @@ struct tevent_req *users_get_send(TALLOC_CTX *memctx,
             err = sss_idmap_unix_to_sid(ctx->opts->idmap_ctx->map,
                                         uid, &sid);
             if (err == IDMAP_NO_DOMAIN) {
-                DEBUG(SSSDBG_MINOR_FAILURE,
+                BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
                       "[%s] did not match any configured ID mapping domain\n",
                        filter_value);
 
@@ -285,7 +285,7 @@ struct tevent_req *users_get_send(TALLOC_CTX *memctx,
 
                 goto done;
             } else if (err != IDMAP_SUCCESS) {
-                DEBUG(SSSDBG_MINOR_FAILURE,
+                BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
                       "Mapping ID [%s] to SID failed: [%s]\n",
                        filter_value, idmap_error_string(err));
                 ret = EIO;
@@ -318,7 +318,7 @@ struct tevent_req *users_get_send(TALLOC_CTX *memctx,
     case BE_FILTER_UUID:
         attr_name = ctx->opts->user_map[SDAP_AT_USER_UUID].name;
         if (attr_name == NULL) {
-            DEBUG(SSSDBG_CRIT_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
                   "UUID search not configured for this backend.\n");
             ret = EINVAL;
             goto done;
@@ -332,7 +332,7 @@ struct tevent_req *users_get_send(TALLOC_CTX *memctx,
     case BE_FILTER_CERT:
         attr_name = ctx->opts->user_map[SDAP_AT_USER_CERT].name;
         if (attr_name == NULL) {
-            DEBUG(SSSDBG_CRIT_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
                   "Certificate search not configured for this backend.\n");
             ret = EINVAL;
             goto done;
@@ -342,7 +342,7 @@ struct tevent_req *users_get_send(TALLOC_CTX *memctx,
                               sdap_get_sss_certmap(ctx->opts->sdap_certmap_ctx),
                               state->domain, &user_filter);
         if (ret != EOK) {
-            DEBUG(SSSDBG_OP_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
                   "sss_cert_derb64_to_ldap_filter failed.\n");
 
             /* Typically sss_cert_derb64_to_ldap_filter() will fail if there
@@ -356,7 +356,7 @@ struct tevent_req *users_get_send(TALLOC_CTX *memctx,
             if (noexist_delete) {
                 ret = sysdb_remove_cert(state->domain, filter_value);
                 if (ret != EOK) {
-                    DEBUG(SSSDBG_OP_FAILURE,
+                    BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
                           "Ignoring error while removing user certificate "
                           "[%d]: %s\n", ret, sss_strerror(ret));
                 }
@@ -370,7 +370,7 @@ struct tevent_req *users_get_send(TALLOC_CTX *memctx,
 
         state->extra_attrs = sysdb_new_attrs(state);
         if (state->extra_attrs == NULL) {
-            DEBUG(SSSDBG_OP_FAILURE, "sysdb_new_attrs failed.\n");
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sysdb_new_attrs failed.\n");
             ret = ENOMEM;
             goto done;
         }
@@ -378,7 +378,7 @@ struct tevent_req *users_get_send(TALLOC_CTX *memctx,
         ret = sysdb_attrs_add_base64_blob(state->extra_attrs,
                                           SYSDB_USER_MAPPED_CERT, filter_value);
         if (ret != EOK) {
-            DEBUG(SSSDBG_OP_FAILURE, "sysdb_attrs_add_base64_blob failed.\n");
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sysdb_attrs_add_base64_blob failed.\n");
             goto done;
         }
 
@@ -389,7 +389,7 @@ struct tevent_req *users_get_send(TALLOC_CTX *memctx,
     }
 
     if (attr_name == NULL && user_filter == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "Missing search attribute name or filter.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Missing search attribute name or filter.\n");
         ret = EINVAL;
         goto done;
     }
@@ -398,7 +398,7 @@ struct tevent_req *users_get_send(TALLOC_CTX *memctx,
         user_filter = talloc_asprintf(state, "(%s=%s)", attr_name, clean_value);
         talloc_free(clean_value);
         if (user_filter == NULL) {
-            DEBUG(SSSDBG_OP_FAILURE, "talloc_asprintf failed.\n");
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "talloc_asprintf failed.\n");
             ret = ENOMEM;
             goto done;
         }
@@ -435,7 +435,7 @@ struct tevent_req *users_get_send(TALLOC_CTX *memctx,
 
     talloc_zfree(user_filter);
     if (!state->filter) {
-        DEBUG(SSSDBG_OP_FAILURE, "Failed to build the base filter\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Failed to build the base filter\n");
         ret = ENOMEM;
         goto done;
     }
@@ -693,7 +693,7 @@ struct tevent_req *groups_get_send(TALLOC_CTX *memctx,
 
     state->op = sdap_id_op_create(state, state->conn->conn_cache);
     if (!state->op) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_id_op_create failed\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_id_op_create failed\n");
         ret = ENOMEM;
         goto done;
     }
@@ -727,7 +727,7 @@ struct tevent_req *groups_get_send(TALLOC_CTX *memctx,
         ret = sss_parse_internal_fqname(state, filter_value,
                                         &shortname, NULL);
         if (ret != EOK) {
-            DEBUG(SSSDBG_OP_FAILURE, "Cannot parse %s\n", filter_value);
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Cannot parse %s\n", filter_value);
             goto done;
         }
 
@@ -751,7 +751,7 @@ struct tevent_req *groups_get_send(TALLOC_CTX *memctx,
             err = sss_idmap_unix_to_sid(ctx->opts->idmap_ctx->map,
                                         gid, &sid);
             if (err == IDMAP_NO_DOMAIN) {
-                DEBUG(SSSDBG_MINOR_FAILURE,
+                BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
                       "[%s] did not match any configured ID mapping domain\n",
                        filter_value);
 
@@ -763,7 +763,7 @@ struct tevent_req *groups_get_send(TALLOC_CTX *memctx,
 
                 goto done;
             } else if (err != IDMAP_SUCCESS) {
-                DEBUG(SSSDBG_MINOR_FAILURE,
+                BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
                       "Mapping ID [%s] to SID failed: [%s]\n",
                        filter_value, idmap_error_string(err));
                 ret = EIO;
@@ -796,7 +796,7 @@ struct tevent_req *groups_get_send(TALLOC_CTX *memctx,
     case BE_FILTER_UUID:
         attr_name = ctx->opts->group_map[SDAP_AT_GROUP_UUID].name;
         if (attr_name == NULL) {
-            DEBUG(SSSDBG_CRIT_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
                   "UUID search not configured for this backend.\n");
             ret = EINVAL;
             goto done;
@@ -813,14 +813,14 @@ struct tevent_req *groups_get_send(TALLOC_CTX *memctx,
     }
 
     if (attr_name == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "Missing search attribute name.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Missing search attribute name.\n");
         ret = EINVAL;
         goto done;
     }
 
     oc_list = sdap_make_oc_list(state, ctx->opts->group_map);
     if (oc_list == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Failed to create objectClass list.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Failed to create objectClass list.\n");
         ret = ENOMEM;
         goto done;
     }
@@ -847,7 +847,7 @@ struct tevent_req *groups_get_send(TALLOC_CTX *memctx,
 
     talloc_zfree(clean_value);
     if (!state->filter) {
-        DEBUG(SSSDBG_OP_FAILURE, "Failed to build filter\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Failed to build filter\n");
         ret = ENOMEM;
         goto done;
     }
@@ -1003,7 +1003,7 @@ static void groups_get_done(struct tevent_req *subreq)
                                          state->filter_type,
                                          state->filter_value);
         if (ret != EOK) {
-            DEBUG(SSSDBG_OP_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
                   "Could not delete group [%d]: %s\n", ret, sss_strerror(ret));
             tevent_req_error(req, ret);
             return;
@@ -1035,7 +1035,7 @@ static void groups_get_mpg_done(struct tevent_req *subreq)
                                          state->filter_type,
                                          state->filter_value);
         if (ret != EOK) {
-            DEBUG(SSSDBG_OP_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
                   "Could not delete group [%d]: %s\n", ret, sss_strerror(ret));
             tevent_req_error(req, ret);
             return;
@@ -1177,7 +1177,7 @@ static struct tevent_req *groups_by_user_send(TALLOC_CTX *memctx,
 
     state->op = sdap_id_op_create(state, state->conn->conn_cache);
     if (!state->op) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_id_op_create failed\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_id_op_create failed\n");
         ret = ENOMEM;
         goto fail;
     }
@@ -1697,7 +1697,7 @@ static struct tevent_req *get_user_and_group_send(TALLOC_CTX *memctx,
 
     state->op = sdap_id_op_create(state, state->conn->conn_cache);
     if (!state->op) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_id_op_create failed\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_id_op_create failed\n");
         ret = ENOMEM;
         goto fail;
     }
@@ -1712,7 +1712,7 @@ static struct tevent_req *get_user_and_group_send(TALLOC_CTX *memctx,
                              state->filter_val, state->filter_type,
                              state->noexist_delete, false);
     if (subreq == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "groups_get_send failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "groups_get_send failed.\n");
         ret = ENOMEM;
         goto fail;
     }
@@ -1766,7 +1766,7 @@ static void get_user_and_group_groups_done(struct tevent_req *subreq)
                             state->filter_val, state->filter_type, NULL,
                             state->noexist_delete);
     if (subreq == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "users_get_send failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "users_get_send failed.\n");
         tevent_req_error(req, ENOMEM);
         return;
     }
@@ -1796,7 +1796,7 @@ static void get_user_and_group_users_done(struct tevent_req *subreq)
             ret = sysdb_delete_by_sid(state->sysdb, state->domain,
                                       state->filter_val);
             if (ret != EOK) {
-                DEBUG(SSSDBG_OP_FAILURE, "Could not delete entry by SID!\n");
+                BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Could not delete entry by SID!\n");
                 tevent_req_error(req, ret);
                 return;
             }
@@ -1850,12 +1850,12 @@ sdap_account_info_handler_send(TALLOC_CTX *mem_ctx,
     req = tevent_req_create(mem_ctx, &state,
                             struct sdap_account_info_handler_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
         return NULL;
     }
 
     if (sdap_is_enum_request(data)) {
-        DEBUG(SSSDBG_TRACE_LIBS, "Skipping enumeration on demand\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_LIBS, req, "Skipping enumeration on demand\n");
         ret = EOK;
         goto immediately;
     }

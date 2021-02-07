@@ -107,7 +107,7 @@ sdap_dom_enum_ex_send(TALLOC_CTX *memctx,
 
     state->user_op = sdap_id_op_create(state, user_conn->conn_cache);
     if (state->user_op == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "sdap_id_op_create failed for users\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "sdap_id_op_create failed for users\n");
         ret = EIO;
         goto fail;
     }
@@ -115,7 +115,7 @@ sdap_dom_enum_ex_send(TALLOC_CTX *memctx,
     ret = sdap_dom_enum_ex_retry(req, state->user_op,
                                  sdap_dom_enum_ex_get_users);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_dom_enum_ex_retry failed\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_dom_enum_ex_retry failed\n");
         goto fail;
     }
 
@@ -138,7 +138,7 @@ static errno_t sdap_dom_enum_ex_retry(struct tevent_req *req,
 
     subreq = sdap_id_op_connect_send(op, state, &ret);
     if (subreq == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "sdap_id_op_connect_send failed: %d\n", ret);
         return ret;
     }
@@ -158,11 +158,11 @@ static bool sdap_dom_enum_ex_connected(struct tevent_req *subreq)
     talloc_zfree(subreq);
     if (ret != EOK) {
         if (dp_error == DP_ERR_OFFLINE) {
-            DEBUG(SSSDBG_TRACE_FUNC,
+            BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
                   "Backend is marked offline, retry later!\n");
             tevent_req_done(req);
         } else {
-            DEBUG(SSSDBG_MINOR_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
                   "Domain enumeration failed to connect to " \
                    "LDAP server: (%d)[%s]\n", ret, strerror(ret));
             tevent_req_error(req, ret);
@@ -216,12 +216,12 @@ static void sdap_dom_enum_ex_users_done(struct tevent_req *subreq)
         }
         return;
     } else if (dp_error == DP_ERR_OFFLINE) {
-        DEBUG(SSSDBG_TRACE_FUNC, "Backend is offline, retrying later\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Backend is offline, retrying later\n");
         tevent_req_done(req);
         return;
     } else if (ret != EOK && ret != ENOENT) {
         /* Non-recoverable error */
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "User enumeration failed: %d: %s\n", ret, sss_strerror(ret));
         tevent_req_error(req, ret);
         return;
@@ -229,7 +229,7 @@ static void sdap_dom_enum_ex_users_done(struct tevent_req *subreq)
 
     state->group_op = sdap_id_op_create(state, state->group_conn->conn_cache);
     if (state->group_op == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "sdap_id_op_create failed for groups\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "sdap_id_op_create failed for groups\n");
         tevent_req_error(req, EIO);
         return;
     }
@@ -287,12 +287,12 @@ static void sdap_dom_enum_ex_groups_done(struct tevent_req *subreq)
         }
         return;
     } else if (dp_error == DP_ERR_OFFLINE) {
-        DEBUG(SSSDBG_TRACE_FUNC, "Backend is offline, retrying later\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Backend is offline, retrying later\n");
         tevent_req_done(req);
         return;
     } else if (ret != EOK && ret != ENOENT) {
         /* Non-recoverable error */
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Group enumeration failed: %d: %s\n", ret, sss_strerror(ret));
         tevent_req_error(req, ret);
         return;
@@ -301,7 +301,7 @@ static void sdap_dom_enum_ex_groups_done(struct tevent_req *subreq)
 
     state->svc_op = sdap_id_op_create(state, state->svc_conn->conn_cache);
     if (state->svc_op == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "sdap_id_op_create failed for svcs\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "sdap_id_op_create failed for svcs\n");
         tevent_req_error(req, EIO);
         return;
     }
@@ -356,12 +356,12 @@ static void sdap_dom_enum_ex_svcs_done(struct tevent_req *subreq)
         }
         return;
     } else if (dp_error == DP_ERR_OFFLINE) {
-        DEBUG(SSSDBG_TRACE_FUNC, "Backend is offline, retrying later\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Backend is offline, retrying later\n");
         tevent_req_done(req);
         return;
     } else if (ret != EOK && ret != ENOENT) {
         /* Non-recoverable error */
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Service enumeration failed: %d: %s\n", ret, sss_strerror(ret));
         tevent_req_error(req, ret);
         return;
@@ -375,7 +375,7 @@ static void sdap_dom_enum_ex_svcs_done(struct tevent_req *subreq)
     ret = sysdb_set_enumerated(state->sdom->dom, SYSDB_HAS_ENUMERATED_ID,
                                true);
     if (ret != EOK) {
-        DEBUG(SSSDBG_MINOR_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
               "Could not mark domain as having enumerated.\n");
         /* This error is non-fatal, so continue */
     }
@@ -386,7 +386,7 @@ static void sdap_dom_enum_ex_svcs_done(struct tevent_req *subreq)
             /* Not fatal, worst case we'll have stale entries that would be
              * removed on a subsequent online lookup
              */
-            DEBUG(SSSDBG_MINOR_FAILURE, "Cleanup failed: [%d]: %s\n",
+            BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "Cleanup failed: [%d]: %s\n",
                   ret, sss_strerror(ret));
         }
     }
@@ -461,7 +461,7 @@ static struct tevent_req *enum_users_send(TALLOC_CTX *memctx,
                                   ctx->opts->user_map[SDAP_OC_USER].name,
                                   ctx->opts->user_map[SDAP_AT_USER_NAME].name);
     if (!state->filter) {
-        DEBUG(SSSDBG_MINOR_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
               "Failed to build base filter\n");
         ret = ENOMEM;
         goto fail;
@@ -482,7 +482,7 @@ static struct tevent_req *enum_users_send(TALLOC_CTX *memctx,
                 ctx->opts->user_map[SDAP_AT_USER_GID].name);
     }
     if (!state->filter) {
-        DEBUG(SSSDBG_MINOR_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
               "Failed to build base filter\n");
         ret = ENOMEM;
         goto fail;
@@ -501,7 +501,7 @@ static struct tevent_req *enum_users_send(TALLOC_CTX *memctx,
                 ctx->srv_opts->max_user_value);
 
         if (!state->filter) {
-            DEBUG(SSSDBG_MINOR_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
                   "Failed to build base filter\n");
             ret = ENOMEM;
             goto fail;
@@ -511,7 +511,7 @@ static struct tevent_req *enum_users_send(TALLOC_CTX *memctx,
     /* Terminate the search filter */
     state->filter = talloc_asprintf_append_buffer(state->filter, ")");
     if (!state->filter) {
-        DEBUG(SSSDBG_OP_FAILURE, "Failed to build base filter\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Failed to build base filter\n");
         ret = ENOMEM;
         goto fail;
     }
@@ -579,7 +579,7 @@ static void enum_users_done(struct tevent_req *subreq)
         }
     }
 
-    DEBUG(SSSDBG_CONF_SETTINGS, "Users higher USN value: [%s]\n",
+    BE_REQ_DEBUG(SSSDBG_CONF_SETTINGS, req, "Users higher USN value: [%s]\n",
               state->ctx->srv_opts->max_user_value);
 
     tevent_req_done(req);
@@ -639,7 +639,7 @@ static struct tevent_req *enum_groups_send(TALLOC_CTX *memctx,
     /* We always want to filter on objectclass and an available name */
     oc_list = sdap_make_oc_list(state, ctx->opts->group_map);
     if (oc_list == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Failed to create objectClass list.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Failed to create objectClass list.\n");
         ret = ENOMEM;
         goto fail;
     }
@@ -647,7 +647,7 @@ static struct tevent_req *enum_groups_send(TALLOC_CTX *memctx,
     state->filter = talloc_asprintf(state, "(&(%s)(%s=*)", oc_list,
                                ctx->opts->group_map[SDAP_AT_GROUP_NAME].name);
     if (!state->filter) {
-        DEBUG(SSSDBG_MINOR_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
               "Failed to build base filter\n");
         ret = ENOMEM;
         goto fail;
@@ -668,7 +668,7 @@ static struct tevent_req *enum_groups_send(TALLOC_CTX *memctx,
                 ctx->opts->group_map[SDAP_AT_GROUP_GID].name);
     }
     if (!state->filter) {
-        DEBUG(SSSDBG_MINOR_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
               "Failed to build base filter\n");
         ret = ENOMEM;
         goto fail;
@@ -683,7 +683,7 @@ static struct tevent_req *enum_groups_send(TALLOC_CTX *memctx,
                 ctx->opts->group_map[SDAP_AT_GROUP_USN].name,
                 ctx->srv_opts->max_group_value);
         if (!state->filter) {
-            DEBUG(SSSDBG_MINOR_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
                   "Failed to build base filter\n");
             ret = ENOMEM;
             goto fail;
@@ -693,7 +693,7 @@ static struct tevent_req *enum_groups_send(TALLOC_CTX *memctx,
     /* Terminate the search filter */
     state->filter = talloc_asprintf_append_buffer(state->filter, ")");
     if (!state->filter) {
-        DEBUG(SSSDBG_MINOR_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
               "Failed to build base filter\n");
         ret = ENOMEM;
         goto fail;
@@ -758,7 +758,7 @@ static void enum_groups_done(struct tevent_req *subreq)
         }
     }
 
-    DEBUG(SSSDBG_CONF_SETTINGS, "Groups higher USN value: [%s]\n",
+    BE_REQ_DEBUG(SSSDBG_CONF_SETTINGS, req, "Groups higher USN value: [%s]\n",
               state->ctx->srv_opts->max_group_value);
 
     tevent_req_done(req);

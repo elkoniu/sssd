@@ -805,7 +805,7 @@ struct tevent_req *sdap_search_user_send(TALLOC_CTX *memctx,
     state->lookup_type = lookup_type;
 
     if (!state->search_bases) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "User lookup request without a search base\n");
         ret = EINVAL;
         goto done;
@@ -838,7 +838,7 @@ static errno_t sdap_search_user_next_base(struct tevent_req *req)
         return ENOMEM;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC,
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
           "Searching for users with base [%s]\n",
            state->search_bases[state->base_iter]->basedn);
 
@@ -892,7 +892,7 @@ static void sdap_search_user_process(struct tevent_req *subreq)
         return;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC,
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
           "Search for users, returned %zu results.\n", count);
 
     if (state->lookup_type == SDAP_LOOKUP_WILDCARD || \
@@ -929,7 +929,7 @@ static void sdap_search_user_process(struct tevent_req *subreq)
         }
     }
 
-    DEBUG(SSSDBG_TRACE_INTERNAL, "Retrieved total %zu users\n", state->count);
+    BE_REQ_DEBUG(SSSDBG_TRACE_INTERNAL, req, "Retrieved total %zu users\n", state->count);
 
     /* No more search bases
      * Return ENOENT if no users were found
@@ -1034,14 +1034,14 @@ struct tevent_req *sdap_get_users_send(TALLOC_CTX *memctx,
     } else {
         state->mapped_attrs = sysdb_new_attrs(state);
         if (state->mapped_attrs == NULL) {
-            DEBUG(SSSDBG_OP_FAILURE, "sysdb_new_attrs failed.\n");
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sysdb_new_attrs failed.\n");
             ret = ENOMEM;
             goto done;
         }
 
         ret = sysdb_attrs_copy(mapped_attrs, state->mapped_attrs);
         if (ret != EOK) {
-            DEBUG(SSSDBG_OP_FAILURE, "sysdb_attrs_copy failed.\n");
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sysdb_attrs_copy failed.\n");
             goto done;
         }
     }
@@ -1076,7 +1076,7 @@ static void sdap_get_users_done(struct tevent_req *subreq)
                                 &state->users, &state->count);
     if (ret) {
         if (ret != ENOENT) {
-            DEBUG(SSSDBG_OP_FAILURE, "Failed to retrieve users [%d][%s].\n",
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Failed to retrieve users [%d][%s].\n",
                   ret, sss_strerror(ret));
         }
         tevent_req_error(req, ret);
@@ -1092,13 +1092,13 @@ static void sdap_get_users_done(struct tevent_req *subreq)
                           &state->higher_usn);
     PROBE(SDAP_SEARCH_USER_SAVE_END, state->filter);
     if (ret) {
-        DEBUG(SSSDBG_OP_FAILURE, "Failed to store users [%d][%s].\n",
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Failed to store users [%d][%s].\n",
               ret, sss_strerror(ret));
         tevent_req_error(req, ret);
         return;
     }
 
-    DEBUG(SSSDBG_TRACE_ALL, "Saving %zu Users - Done\n", state->count);
+    BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req, "Saving %zu Users - Done\n", state->count);
 
     tevent_req_done(req);
 }

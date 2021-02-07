@@ -103,7 +103,7 @@ sdap_get_services_send(TALLOC_CTX *memctx,
     state->enumeration = enumeration;
 
     if (!state->search_bases) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "Services lookup request without a search base\n");
         ret = EINVAL;
         goto done;
@@ -135,7 +135,7 @@ sdap_get_services_next_base(struct tevent_req *req)
         return ENOMEM;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC,
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
           "Searching for services with base [%s]\n",
            state->search_bases[state->base_iter]->basedn);
 
@@ -175,7 +175,7 @@ sdap_get_services_process(struct tevent_req *subreq)
         return;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC,
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
           "Search for services, returned %zu results.\n",
            count);
 
@@ -232,13 +232,13 @@ sdap_get_services_process(struct tevent_req *subreq)
                              state->services, state->count,
                              &state->higher_usn);
     if (ret) {
-        DEBUG(SSSDBG_MINOR_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
               "Failed to store services.\n");
         tevent_req_error(req, ret);
         return;
     }
 
-    DEBUG(SSSDBG_TRACE_INTERNAL,
+    BE_REQ_DEBUG(SSSDBG_TRACE_INTERNAL, req,
           "Saving %zu services - Done\n", state->count);
 
     tevent_req_done(req);
@@ -567,7 +567,7 @@ enum_services_send(TALLOC_CTX *memctx,
                 id_ctx->opts->service_map[SDAP_AT_SERVICE_PROTOCOL].name);
     }
     if (!state->filter) {
-        DEBUG(SSSDBG_MINOR_FAILURE, "Failed to build base filter\n");
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "Failed to build base filter\n");
         ret = ENOMEM;
         goto fail;
     }
@@ -631,7 +631,7 @@ enum_services_op_done(struct tevent_req *subreq)
         }
     }
 
-    DEBUG(SSSDBG_FUNC_DATA, "Services higher USN value: [%s]\n",
+    BE_REQ_DEBUG(SSSDBG_FUNC_DATA, req, "Services higher USN value: [%s]\n",
               state->id_ctx->srv_opts->max_service_value);
 
     tevent_req_done(req);

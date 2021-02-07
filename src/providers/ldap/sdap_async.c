@@ -414,12 +414,12 @@ static void sdap_op_timeout(struct tevent_req *req)
 
     /* should never happen, but just in case */
     if (op->done) {
-        DEBUG(SSSDBG_OP_FAILURE, "Timeout happened after op was finished !?\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Timeout happened after op was finished !?\n");
         return;
     }
 
     /* signal the caller that we have a timeout */
-    DEBUG(SSSDBG_TRACE_LIBS, "Issuing timeout for %d\n", op->msgid);
+    BE_REQ_DEBUG(SSSDBG_TRACE_LIBS, req, "Issuing timeout for %d\n", op->msgid);
     op->callback(op, NULL, ETIMEDOUT, op->data);
 }
 
@@ -541,7 +541,7 @@ struct tevent_req *sdap_exop_modify_passwd_send(TALLOC_CTX *memctx,
 
     ber = ber_alloc_t( LBER_USE_DER );
     if (ber == NULL) {
-        DEBUG(SSSDBG_TRACE_LIBS, "ber_alloc_t failed.\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_LIBS, req, "ber_alloc_t failed.\n");
         talloc_zfree(req);
         return NULL;
     }
@@ -551,7 +551,7 @@ struct tevent_req *sdap_exop_modify_passwd_send(TALLOC_CTX *memctx,
                      LDAP_TAG_EXOP_MODIFY_PASSWD_OLD, password,
                      LDAP_TAG_EXOP_MODIFY_PASSWD_NEW, new_password);
     if (ret == -1) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "ber_printf failed.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "ber_printf failed.\n");
         ber_free(ber, 1);
         talloc_zfree(req);
         return NULL;
@@ -560,7 +560,7 @@ struct tevent_req *sdap_exop_modify_passwd_send(TALLOC_CTX *memctx,
     ret = ber_flatten(ber, &bv);
     ber_free(ber, 1);
     if (ret == -1) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "ber_flatten failed.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "ber_flatten failed.\n");
         talloc_zfree(req);
         return NULL;
     }
@@ -568,14 +568,14 @@ struct tevent_req *sdap_exop_modify_passwd_send(TALLOC_CTX *memctx,
     ret = sdap_control_create(state->sh, LDAP_CONTROL_PASSWORDPOLICYREQUEST,
                               0, NULL, 0, &ctrls[0]);
     if (ret != LDAP_SUCCESS && ret != LDAP_NOT_SUPPORTED) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "sdap_control_create failed to create "
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "sdap_control_create failed to create "
                   "Password Policy control.\n");
         ret = ERR_INTERNAL;
         goto fail;
     }
     request_controls = ctrls;
 
-    DEBUG(SSSDBG_CONF_SETTINGS, "Executing extended operation\n");
+    BE_REQ_DEBUG(SSSDBG_CONF_SETTINGS, req, "Executing extended operation\n");
 
     ret = ldap_extended_operation(state->sh->ldap, LDAP_EXOP_MODIFY_PASSWD,
                                   bv, request_controls, NULL, &msgid);
@@ -586,7 +586,7 @@ struct tevent_req *sdap_exop_modify_passwd_send(TALLOC_CTX *memctx,
         ret = ERR_NETWORK_IO;
         goto fail;
     }
-    DEBUG(SSSDBG_TRACE_INTERNAL,
+    BE_REQ_DEBUG(SSSDBG_TRACE_INTERNAL, req,
           "ldap_extended_operation sent, msgid = %d\n", msgid);
 
     ret = sdap_op_add(state, ev, state->sh, msgid,
@@ -630,17 +630,17 @@ static void sdap_exop_modify_passwd_done(struct sdap_op *op,
                             &result, NULL, &errmsg, NULL,
                             &response_controls, 0);
     if (ret != LDAP_SUCCESS) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "ldap_parse_result failed (%d)\n", state->op->msgid);
         ret = ERR_INTERNAL;
         goto done;
     }
 
     if (response_controls == NULL) {
-        DEBUG(SSSDBG_FUNC_DATA, "Server returned no controls.\n");
+        BE_REQ_DEBUG(SSSDBG_FUNC_DATA, req, "Server returned no controls.\n");
     } else {
         for (c = 0; response_controls[c] != NULL; c++) {
-            DEBUG(SSSDBG_TRACE_ALL, "Server returned control [%s].\n",
+            BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req, "Server returned control [%s].\n",
                       response_controls[c]->ldctl_oid);
             if (strcmp(response_controls[c]->ldctl_oid,
                        LDAP_CONTROL_PASSWORDPOLICYRESPONSE) == 0) {
@@ -649,13 +649,13 @@ static void sdap_exop_modify_passwd_done(struct sdap_op *op,
                                                         &pp_expire, &pp_grace,
                                                         &pp_error);
                 if (ret != LDAP_SUCCESS) {
-                    DEBUG(SSSDBG_CRIT_FAILURE,
+                    BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
                           "ldap_parse_passwordpolicy_control failed.\n");
                     ret = ERR_NETWORK_IO;
                     goto done;
                 }
 
-                DEBUG(SSSDBG_TRACE_LIBS,
+                BE_REQ_DEBUG(SSSDBG_TRACE_LIBS, req,
                       "Password Policy Response: expire [%d] grace [%d] "
                           "error [%s].\n", pp_expire, pp_grace,
                           ldap_passwordpolicy_err2txt(pp_error));
@@ -663,7 +663,7 @@ static void sdap_exop_modify_passwd_done(struct sdap_op *op,
         }
     }
 
-    DEBUG(SSSDBG_MINOR_FAILURE, "ldap_extended_operation result: %s(%d), %s\n",
+    BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "ldap_extended_operation result: %s(%d), %s\n",
             sss_ldap_err2string(result), result, errmsg);
 
     ret = sdap_chpass_result(state, result, errmsg, &state->user_error_message);
@@ -749,14 +749,14 @@ sdap_modify_send(TALLOC_CTX *mem_ctx,
 
     ret = ldap_modify_ext(state->sh->ldap, dn, mods, NULL, NULL, &msgid);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "ldap_modify_ext() failed [%d]\n", ret);
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "ldap_modify_ext() failed [%d]\n", ret);
         goto done;
     }
 
     ret = sdap_op_add(state, state->ev, state->sh, msgid,
                       sdap_modify_done, req, timeout, &state->op);
     if (ret) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Failed to set up operation!\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Failed to set up operation!\n");
         goto done;
     }
 
@@ -793,13 +793,13 @@ static void sdap_modify_done(struct sdap_op *op,
     lret = ldap_parse_result(state->sh->ldap, reply->msg, &result,
                              NULL, &errmsg, NULL, NULL, 0);
     if (lret != LDAP_SUCCESS) {
-        DEBUG(SSSDBG_OP_FAILURE, "ldap_parse_result failed (%d)\n",
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "ldap_parse_result failed (%d)\n",
                                   state->op->msgid);
         ret = EIO;
         goto done;
     }
 
-    DEBUG(SSSDBG_TRACE_LIBS, "ldap_modify result: %s(%d), %s\n",
+    BE_REQ_DEBUG(SSSDBG_TRACE_LIBS, req, "ldap_modify result: %s(%d), %s\n",
                               sss_ldap_err2string(result),
                               result, errmsg);
 
@@ -920,7 +920,7 @@ static void sdap_modify_passwd_done(struct tevent_req *subreq)
     ret = sdap_modify_recv(state, subreq, &ldap_result, &ldap_msg);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Password change for [%s] failed [%d]: %s\n",
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Password change for [%s] failed [%d]: %s\n",
               state->dn, ret, sss_strerror(ret));
         tevent_req_error(req, ret);
         return;
@@ -928,13 +928,13 @@ static void sdap_modify_passwd_done(struct tevent_req *subreq)
 
     ret = sdap_chpass_result(state, ldap_result, ldap_msg, &state->user_msg);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Password change for [%s] failed [%d]: %s\n",
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Password change for [%s] failed [%d]: %s\n",
               state->dn, ret, sss_strerror(ret));
         tevent_req_error(req, ret);
         return;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "Password change for [%s] was successful\n",
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Password change for [%s] was successful\n",
           state->dn);
 
     tevent_req_done(req);
@@ -1026,13 +1026,13 @@ static void sdap_modify_shadow_lastchange_done(struct tevent_req *subreq)
     ret = sdap_modify_recv(state, subreq, NULL, NULL);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "shadowLastChange change for [%s] failed [%d]: %s\n",
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "shadowLastChange change for [%s] failed [%d]: %s\n",
               state->dn, ret, sss_strerror(ret));
         tevent_req_error(req, ret);
         return;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "shadowLastChange change for [%s] was successful\n",
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "shadowLastChange change for [%s] was successful\n",
           state->dn);
 
     tevent_req_done(req);
@@ -1126,7 +1126,7 @@ static void sdap_get_rootdse_done(struct tevent_req *subreq)
     }
 
     if (num_results == 0 || !results) {
-        DEBUG(SSSDBG_OP_FAILURE, "RootDSE could not be retrieved. "
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "RootDSE could not be retrieved. "
                   "Please check that anonymous access to RootDSE is allowed\n"
               );
         tevent_req_error(req, ENOENT);
@@ -1134,7 +1134,7 @@ static void sdap_get_rootdse_done(struct tevent_req *subreq)
     }
 
     if (num_results > 1) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Multiple replies when searching for RootDSE??\n");
         tevent_req_error(req, EIO);
         return;
@@ -1143,13 +1143,13 @@ static void sdap_get_rootdse_done(struct tevent_req *subreq)
     state->rootdse = talloc_steal(state, results[0]);
     talloc_zfree(results);
 
-    DEBUG(SSSDBG_TRACE_INTERNAL, "Got rootdse\n");
+    BE_REQ_DEBUG(SSSDBG_TRACE_INTERNAL, req, "Got rootdse\n");
 
     /* This feature is disabled for both groups
      * and initgroups. Skip the auto-detection
      * lookup.
      */
-    DEBUG(SSSDBG_TRACE_INTERNAL,
+    BE_REQ_DEBUG(SSSDBG_TRACE_INTERNAL, req,
           "Skipping auto-detection of match rule\n");
     tevent_req_done(req);
     return;
@@ -1378,7 +1378,7 @@ sdap_get_generic_ext_send(TALLOC_CTX *memctx,
     state->flags = flags;
 
     if (state->sh == NULL || state->sh->ldap == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "Trying LDAP search while not connected.\n");
         tevent_req_error(req, EIO);
         tevent_req_post(req, ev);
@@ -1393,7 +1393,7 @@ sdap_get_generic_ext_send(TALLOC_CTX *memctx,
     if (scope == LDAP_SCOPE_BASE && (flags & SDAP_SRCH_FLG_PAGING)) {
         /* Disable paging */
         state->flags &= ~SDAP_SRCH_FLG_PAGING;
-        DEBUG(SSSDBG_TRACE_FUNC,
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
               "WARNING: Disabling paging because scope is set to base.\n");
     }
 
@@ -1466,7 +1466,7 @@ static errno_t sdap_get_generic_ext_step(struct tevent_req *req)
      */
     talloc_zfree(state->op);
 
-    DEBUG(SSSDBG_TRACE_FUNC,
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
          "calling ldap_search_ext with [%s][%s].\n",
           state->filter ? state->filter : "no filter",
           state->search_base);
@@ -1475,7 +1475,7 @@ static errno_t sdap_get_generic_ext_step(struct tevent_req *req)
 
         if (state->attrs) {
             for (i = 0; state->attrs[i]; i++) {
-                DEBUG(SSSDBG_TRACE_LIBS,
+                BE_REQ_DEBUG(SSSDBG_TRACE_LIBS, req,
                       "Requesting attrs: [%s]\n", state->attrs[i]);
             }
         }
@@ -1511,14 +1511,14 @@ static errno_t sdap_get_generic_ext_step(struct tevent_req *req)
     ldap_control_free(page_control);
     state->serverctrls[state->nserverctrls] = NULL;
     if (lret != LDAP_SUCCESS) {
-        DEBUG(SSSDBG_MINOR_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
               "ldap_search_ext failed: %s\n", sss_ldap_err2string(lret));
         if (lret == LDAP_SERVER_DOWN) {
             ret = ETIMEDOUT;
             optret = sss_ldap_get_diagnostic_msg(state, state->sh->ldap,
                                                  &errmsg);
             if (optret == LDAP_SUCCESS) {
-                DEBUG(SSSDBG_MINOR_FAILURE, "Connection error: %s\n", errmsg);
+                BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "Connection error: %s\n", errmsg);
                 sss_log(SSS_LOG_ERR, "LDAP connection error: %s", errmsg);
             }
             else {
@@ -1532,14 +1532,14 @@ static errno_t sdap_get_generic_ext_step(struct tevent_req *req)
         }
         goto done;
     }
-    DEBUG(SSSDBG_TRACE_INTERNAL, "ldap_search_ext called, msgid = %d\n", msgid);
+    BE_REQ_DEBUG(SSSDBG_TRACE_INTERNAL, req, "ldap_search_ext called, msgid = %d\n", msgid);
 
     ret = sdap_op_add(state, state->ev, state->sh, msgid,
                       sdap_get_generic_op_finished, req,
                       state->timeout,
                       &state->op);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Failed to set up operation!\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Failed to set up operation!\n");
         goto done;
     }
 
@@ -1615,7 +1615,7 @@ static void sdap_get_generic_op_finished(struct sdap_op *op,
         ret = ldap_parse_reference(state->sh->ldap, reply->msg,
                                    &refs, NULL, 0);
         if (ret != LDAP_SUCCESS) {
-            DEBUG(SSSDBG_OP_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
                   "ldap_parse_reference failed (%d)\n", state->op->msgid);
             tevent_req_error(req, EIO);
             return;
@@ -1623,7 +1623,7 @@ static void sdap_get_generic_op_finished(struct sdap_op *op,
 
         ret = sdap_get_generic_ext_add_references(state, refs);
         if (ret != EOK) {
-            DEBUG(SSSDBG_OP_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
                   "sdap_get_generic_ext_add_references failed: %s(%d)\n",
                   sss_strerror(ret), ret);
             ldap_memvfree((void **)refs);
@@ -1641,7 +1641,7 @@ static void sdap_get_generic_op_finished(struct sdap_op *op,
     case LDAP_RES_SEARCH_ENTRY:
         ret = state->parse_cb(state->sh, reply, state->cb_data);
         if (ret != EOK) {
-            DEBUG(SSSDBG_CRIT_FAILURE, "reply parsing callback failed.\n");
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "reply parsing callback failed.\n");
             tevent_req_error(req, ret);
             return;
         }
@@ -1654,13 +1654,13 @@ static void sdap_get_generic_op_finished(struct sdap_op *op,
                                 &result, NULL, &errmsg, &refs,
                                 &returned_controls, 0);
         if (ret != LDAP_SUCCESS) {
-            DEBUG(SSSDBG_OP_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
                   "ldap_parse_result failed (%d)\n", state->op->msgid);
             tevent_req_error(req, EIO);
             return;
         }
 
-        DEBUG(SSSDBG_TRACE_FUNC, "Search result: %s(%d), %s\n",
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Search result: %s(%d), %s\n",
                   sss_ldap_err2string(result), result,
                   errmsg ? errmsg : "no errmsg set");
 
@@ -1669,7 +1669,7 @@ static void sdap_get_generic_op_finished(struct sdap_op *op,
             /* Try to return what we've got */
 
             if ( ! (state->flags & SDAP_SRCH_FLG_SIZELIMIT_SILENT)) {
-                DEBUG(SSSDBG_MINOR_FAILURE,
+                BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
                       "LDAP sizelimit was exceeded, "
                       "returning incomplete data\n");
             }
@@ -1679,7 +1679,7 @@ static void sdap_get_generic_op_finished(struct sdap_op *op,
              * filter for Active Directory. Warn at a higher log
              * level and return EIO.
              */
-            DEBUG(SSSDBG_TRACE_INTERNAL,
+            BE_REQ_DEBUG(SSSDBG_TRACE_INTERNAL, req,
                   "LDAP_INAPPROPRIATE_MATCHING:  %s\n",
                    errmsg ? errmsg : "no errmsg set");
             ldap_memfree(errmsg);
@@ -1692,14 +1692,14 @@ static void sdap_get_generic_op_finished(struct sdap_op *op,
         } else if (result == LDAP_REFERRAL) {
             ret = sdap_get_generic_ext_add_references(state, refs);
             if (ret != EOK) {
-                DEBUG(SSSDBG_OP_FAILURE,
+                BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
                       "sdap_get_generic_ext_add_references failed: %s(%d)\n",
                       sss_strerror(ret), ret);
                 tevent_req_error(req, ret);
             }
             /* For referrals, we need to fall through as if it was LDAP_SUCCESS */
         } else if (result != LDAP_SUCCESS && result != LDAP_NO_SUCH_OBJECT) {
-            DEBUG(SSSDBG_OP_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
                   "Unexpected result from ldap: %s(%d), %s\n",
                    sss_ldap_err2string(result), result,
                    errmsg ? errmsg : "no errmsg set");
@@ -1722,11 +1722,11 @@ static void sdap_get_generic_op_finished(struct sdap_op *op,
                                                &total_count, &cookie);
         ldap_controls_free(returned_controls);
         if (lret != LDAP_SUCCESS) {
-            DEBUG(SSSDBG_CRIT_FAILURE, "Could not determine page control\n");
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Could not determine page control\n");
             tevent_req_error(req, EIO);
             return;
         }
-        DEBUG(SSSDBG_TRACE_INTERNAL, "Total count [%d]\n", total_count);
+        BE_REQ_DEBUG(SSSDBG_TRACE_INTERNAL, req, "Total count [%d]\n", total_count);
 
         if (cookie.bv_val != NULL && cookie.bv_len > 0) {
             /* Cookie contains data, which means there are more requests
@@ -1804,7 +1804,7 @@ static void generic_ext_search_handler(struct tevent_req *subreq,
     ret = sdap_get_generic_ext_recv(subreq, req, &ref_count, &refs);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "sdap_get_generic_ext_recv failed [%d]: %s\n",
               ret, sss_strerror(ret));
         tevent_req_error(req, ret);
@@ -1813,11 +1813,11 @@ static void generic_ext_search_handler(struct tevent_req *subreq,
 
     if (ref_count > 0) {
         /* We will ignore referrals in the generic handler */
-        DEBUG(SSSDBG_TRACE_ALL,
+        BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req,
               "Request included referrals which were ignored.\n");
         if (debug_level & SSSDBG_TRACE_ALL) {
             for(i = 0; i < ref_count; i++) {
-                DEBUG(SSSDBG_TRACE_ALL,
+                BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req,
                       "    Ref: %s\n", refs[i]);
             }
         }
@@ -2081,12 +2081,12 @@ sdap_x_deref_search_send(TALLOC_CTX *memctx, struct tevent_context *ev,
     ret = sdap_x_deref_create_control(sh, deref_attr,
                                       attrs, &state->ctrls[0]);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Could not create OpenLDAP deref control\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Could not create OpenLDAP deref control\n");
         talloc_zfree(req);
         return NULL;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC,
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
           "Dereferencing entry [%s] using OpenLDAP deref\n", base_dn);
     subreq = sdap_get_generic_ext_send(state, ev, opts, sh, base_dn,
                                        filter == NULL ? LDAP_SCOPE_BASE
@@ -2308,12 +2308,12 @@ sdap_sd_search_send(TALLOC_CTX *memctx, struct tevent_context *ev,
 
     ret = sdap_sd_search_create_control(sh, sd_flags, &state->ctrls[0]);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Could not create SD control\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Could not create SD control\n");
         ret = EIO;
         goto fail;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "Searching entry [%s] using SD\n", base_dn);
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Searching entry [%s] using SD\n", base_dn);
     subreq = sdap_get_generic_ext_send(state, ev, opts, sh, base_dn,
                                        LDAP_SCOPE_BASE, "(objectclass=*)", attrs,
                                        state->ctrls, NULL, 0, timeout,
@@ -2415,7 +2415,7 @@ static void sdap_sd_search_done(struct tevent_req *subreq)
                                     &state->refs);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "sdap_get_generic_ext_recv failed [%d]: %s\n",
               ret, sss_strerror(ret));
         tevent_req_error(req, ret);
@@ -2508,11 +2508,11 @@ sdap_asq_search_send(TALLOC_CTX *memctx, struct tevent_context *ev,
     ret = sdap_asq_search_create_control(sh, deref_attr, &state->ctrls[0]);
     if (ret != EOK) {
         talloc_zfree(req);
-        DEBUG(SSSDBG_CRIT_FAILURE, "Could not create ASQ control\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Could not create ASQ control\n");
         return NULL;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "Dereferencing entry [%s] using ASQ\n", base_dn);
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Dereferencing entry [%s] using ASQ\n", base_dn);
     subreq = sdap_get_generic_ext_send(state, ev, opts, sh, base_dn,
                                        LDAP_SCOPE_BASE, NULL, attrs,
                                        state->ctrls, NULL, 0, timeout,
@@ -2757,18 +2757,18 @@ sdap_deref_search_with_filter_send(TALLOC_CTX *memctx,
     state->flags = flags;
 
     if (sdap_is_control_supported(sh, LDAP_CONTROL_X_DEREF)) {
-        DEBUG(SSSDBG_TRACE_INTERNAL, "Server supports OpenLDAP deref\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_INTERNAL, req, "Server supports OpenLDAP deref\n");
         state->deref_type = SDAP_DEREF_OPENLDAP;
 
         subreq = sdap_x_deref_search_send(state, ev, opts, sh, search_base,
                                           filter, deref_attr, attrs, maps,
                                           num_maps, timeout);
         if (!subreq) {
-            DEBUG(SSSDBG_OP_FAILURE, "Cannot start OpenLDAP deref search\n");
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Cannot start OpenLDAP deref search\n");
             goto fail;
         }
     } else {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Server does not support any known deref method!\n");
         goto fail;
     }
@@ -2822,29 +2822,29 @@ sdap_deref_search_send(TALLOC_CTX *memctx,
     PROBE(SDAP_DEREF_SEARCH_SEND, state->base_dn, state->deref_attr);
 
     if (sdap_is_control_supported(sh, LDAP_SERVER_ASQ_OID)) {
-        DEBUG(SSSDBG_TRACE_INTERNAL, "Server supports ASQ\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_INTERNAL, req, "Server supports ASQ\n");
         state->deref_type = SDAP_DEREF_ASQ;
 
         subreq = sdap_asq_search_send(state, ev, opts, sh, base_dn,
                                       deref_attr, attrs, maps, num_maps,
                                       timeout);
         if (!subreq) {
-            DEBUG(SSSDBG_OP_FAILURE, "Cannot start ASQ search\n");
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Cannot start ASQ search\n");
             goto fail;
         }
     } else if (sdap_is_control_supported(sh, LDAP_CONTROL_X_DEREF)) {
-        DEBUG(SSSDBG_TRACE_INTERNAL, "Server supports OpenLDAP deref\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_INTERNAL, req, "Server supports OpenLDAP deref\n");
         state->deref_type = SDAP_DEREF_OPENLDAP;
 
         subreq = sdap_x_deref_search_send(state, ev, opts, sh, base_dn, NULL,
                                           deref_attr, attrs, maps, num_maps,
                                           timeout);
         if (!subreq) {
-            DEBUG(SSSDBG_OP_FAILURE, "Cannot start OpenLDAP deref search\n");
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Cannot start OpenLDAP deref search\n");
             goto fail;
         }
     } else {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Server does not support any known deref method!\n");
         goto fail;
     }
@@ -2875,7 +2875,7 @@ static void sdap_deref_search_done(struct tevent_req *subreq)
                 &state->reply_count, &state->reply);
         break;
     default:
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "Unknown deref method %d\n", state->deref_type);
         tevent_req_error(req, EINVAL);
         return;
@@ -2883,7 +2883,7 @@ static void sdap_deref_search_done(struct tevent_req *subreq)
 
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "dereference processing failed [%d]: %s\n", ret, strerror(ret));
         if (ret == ENOTSUP) {
             state->sh->disable_deref = true;

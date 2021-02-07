@@ -320,19 +320,19 @@ struct tevent_req *sdap_get_tgt_send(TALLOC_CTX *mem_ctx,
                                      realm_str, princ_str, keytab_name, lifetime,
                                      &buf);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "create_tgt_req_send_buffer failed.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "create_tgt_req_send_buffer failed.\n");
         goto fail;
     }
 
     ret = sdap_fork_child(state->ev, state->child, req);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "sdap_fork_child failed.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "sdap_fork_child failed.\n");
         goto fail;
     }
 
     ret = set_tgt_child_timeout(req, ev, timeout);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "set_tgt_child_timeout failed.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "set_tgt_child_timeout failed.\n");
         goto fail;
     }
 
@@ -428,7 +428,7 @@ int sdap_get_tgt_recv(struct tevent_req *req,
         return ret;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC,
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
           "Child responded: %d [%s], expired on [%ld]\n", res, ccn, (long)expire_time);
     *result = res;
     *kerr = krberr;
@@ -446,7 +446,7 @@ static void get_tgt_sigkill_handler(struct tevent_context *ev,
                                             struct sdap_get_tgt_state);
     int ret;
 
-    DEBUG(SSSDBG_TRACE_ALL,
+    BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req,
           "timeout for sending SIGKILL to TGT child [%d] reached.\n",
           state->child->pid);
 
@@ -468,18 +468,18 @@ static void get_tgt_timeout_handler(struct tevent_context *ev,
                                             struct sdap_get_tgt_state);
     int ret;
 
-    DEBUG(SSSDBG_TRACE_ALL,
+    BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req,
           "timeout for sending SIGTERM to TGT child [%d] reached.\n",
           state->child->pid);
 
     ret = kill(state->child->pid, SIGTERM);
     if (ret == -1) {
         ret = errno;
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "Sending SIGTERM failed [%d][%s].\n", ret, strerror(ret));
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC,
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
           "Setting %d seconds timeout for sending SIGKILL to TGT child\n",
           SIGTERM_TO_SIGKILL_TIME);
 
@@ -487,7 +487,7 @@ static void get_tgt_timeout_handler(struct tevent_context *ev,
 
     state->kill_te = tevent_add_timer(ev, req, tv, get_tgt_sigkill_handler, req);
     if (state->kill_te == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_add_timer failed.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_add_timer failed.\n");
         tevent_req_error(req, ECANCELED);
     }
 }

@@ -81,7 +81,7 @@ sdap_iphost_get_send(TALLOC_CTX *mem_ctx,
 
     state->op = sdap_id_op_create(state, state->conn->conn_cache);
     if (state->op == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_id_op_create failed\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_id_op_create failed\n");
         ret = ENOMEM;
         goto fail;
     }
@@ -108,7 +108,7 @@ sdap_iphost_get_send(TALLOC_CTX *mem_ctx,
                             attr_name, clean_filter_value);
     talloc_zfree(clean_filter_value);
     if (state->filter == NULL) {
-        DEBUG(SSSDBG_MINOR_FAILURE, "Failed to build the base filter\n");
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "Failed to build the base filter\n");
         ret = ENOMEM;
         goto fail;
     }
@@ -304,12 +304,12 @@ sdap_iphost_handler_send(TALLOC_CTX *mem_ctx,
     req = tevent_req_create(mem_ctx, &state,
                             struct sdap_ip_host_handler_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
         return NULL;
     }
 
     if (resolver_data->filter_type == BE_FILTER_ENUM) {
-        DEBUG(SSSDBG_TRACE_LIBS, "Skipping enumeration on demand\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_LIBS, req, "Skipping enumeration on demand\n");
         ret = EOK;
         goto immediately;
     }

@@ -155,7 +155,7 @@ sdap_dyndns_update_send(TALLOC_CTX *mem_ctx,
     subreq = sdap_dyndns_get_addrs_send(state, state->ev, sdap_ctx, ifname);
     if (!subreq) {
         ret = EIO;
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_id_op_connect_send failed: [%d](%s)\n",
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_id_op_connect_send failed: [%d](%s)\n",
               ret, sss_strerror(ret));
         goto done;
     }
@@ -183,7 +183,7 @@ sdap_dyndns_update_addrs_done(struct tevent_req *subreq)
     ret = sdap_dyndns_get_addrs_recv(subreq, state, &state->addresses);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "Can't get addresses for DNS update\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Can't get addresses for DNS update\n");
         tevent_req_error(req, ret);
         return;
     }
@@ -195,7 +195,7 @@ sdap_dyndns_update_addrs_done(struct tevent_req *subreq)
         subreq = nsupdate_get_addrs_send(state, state->ev,
                                          state->be_res, state->hostname);
         if (subreq == NULL) {
-            DEBUG(SSSDBG_OP_FAILURE, "Can't initiate address check\n");
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Can't initiate address check\n");
             tevent_req_error(req, ret);
             return;
         }
@@ -226,7 +226,7 @@ sdap_dyndns_dns_addrs_done(struct tevent_req *subreq)
     ret = nsupdate_get_addrs_recv(subreq, state, &state->dns_addrlist, NULL);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Could not receive list of current addresses [%d]: %s\n",
               ret, sss_strerror(ret));
         tevent_req_error(req, ret);
@@ -236,14 +236,14 @@ sdap_dyndns_dns_addrs_done(struct tevent_req *subreq)
     if (state->check_diff) {
         ret = sdap_dyndns_addrs_diff(state, &do_update);
         if (ret != EOK) {
-            DEBUG(SSSDBG_OP_FAILURE, "Could not check the diff between DNS "
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Could not check the diff between DNS "
                   "and current addresses [%d]: %s\n", ret, strerror(ret));
             tevent_req_error(req, ret);
             return;
         }
 
         if (do_update == false) {
-            DEBUG(SSSDBG_TRACE_FUNC,
+            BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
                   "No DNS update needed, addresses did not change\n");
             tevent_req_done(req);
             return;
@@ -256,7 +256,7 @@ sdap_dyndns_dns_addrs_done(struct tevent_req *subreq)
      * the addresses have changed (or both) */
     ret = sdap_dyndns_update_step(req);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "Could not start the update [%d]: %s\n",
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Could not start the update [%d]: %s\n",
               ret, sss_strerror(ret));
         tevent_req_error(req, ret);
     }
@@ -344,7 +344,7 @@ sdap_dyndns_update_step(struct tevent_req *req)
                                      state->update_per_family,
                                      &state->update_msg);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "Can't get addresses for DNS update\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Can't get addresses for DNS update\n");
         return ret;
     }
 
@@ -379,7 +379,7 @@ sdap_dyndns_update_done(struct tevent_req *subreq)
         if (state->fallback_mode == false
                 && should_retry(ret, child_status)) {
             state->fallback_mode = true;
-            DEBUG(SSSDBG_MINOR_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
                   "nsupdate failed, retrying.\n");
             ret = sdap_dyndns_update_step(req);
             if (ret == EOK) {
@@ -389,7 +389,7 @@ sdap_dyndns_update_done(struct tevent_req *subreq)
     }
 
     if (state->update_ptr == false) {
-        DEBUG(SSSDBG_TRACE_FUNC, "No PTR update requested, done\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "No PTR update requested, done\n");
         tevent_req_done(req);
         return;
     }
@@ -430,7 +430,7 @@ sdap_dyndns_update_ptr_step(struct tevent_req *req)
                                      &state->update_msg);
 
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "Can't get addresses for DNS update\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Can't get addresses for DNS update\n");
         return ret;
     }
 
@@ -465,7 +465,7 @@ sdap_dyndns_update_ptr_done(struct tevent_req *subreq)
         if (state->fallback_mode == false
                 && should_retry(ret, child_status)) {
             state->fallback_mode = true;
-            DEBUG(SSSDBG_MINOR_FAILURE, "nsupdate failed, retrying\n");
+            BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "nsupdate failed, retrying\n");
             ret = sdap_dyndns_update_ptr_step(req);
             if (ret == EOK) {
                 return;
@@ -575,7 +575,7 @@ sdap_dyndns_get_addrs_send(TALLOC_CTX *mem_ctx,
     if (iface) {
         ret = get_ifaces_addrs(state, iface, &state->addresses);
         if (ret != EOK || state->addresses == NULL) {
-            DEBUG(SSSDBG_MINOR_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
                   "get_ifaces_addrs() failed: %d:[%s]\n",
                   ret, sss_strerror(ret));
         }
@@ -587,14 +587,14 @@ sdap_dyndns_get_addrs_send(TALLOC_CTX *mem_ctx,
     state->sdap_op = sdap_id_op_create(state, sdap_ctx->conn->conn_cache);
     if (!state->sdap_op) {
         ret = ENOMEM;
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_id_op_create failed\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_id_op_create failed\n");
         goto done;
     }
 
     subreq = sdap_id_op_connect_send(state->sdap_op, state, &ret);
     if (!subreq) {
         ret = EIO;
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_id_op_connect_send failed: [%d](%s)\n",
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_id_op_connect_send failed: [%d](%s)\n",
               ret, sss_strerror(ret));
         goto done;
     }
@@ -629,11 +629,11 @@ sdap_dyndns_get_addrs_done(struct tevent_req *subreq)
     talloc_zfree(subreq);
     if (ret != EOK) {
         if (dp_error == DP_ERR_OFFLINE) {
-            DEBUG(SSSDBG_MINOR_FAILURE, "No LDAP server is available, "
+            BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "No LDAP server is available, "
                   "dynamic DNS update is skipped in offline mode.\n");
             ret = ERR_DYNDNS_OFFLINE;
         } else {
-            DEBUG(SSSDBG_OP_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
                   "Failed to connect to LDAP server: [%d](%s)\n",
                   ret, sss_strerror(ret));
         }
@@ -643,7 +643,7 @@ sdap_dyndns_get_addrs_done(struct tevent_req *subreq)
 
     ret = sdap_dyndns_add_ldap_conn(state, sdap_id_op_handle(state->sdap_op));
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "Can't get addresses from LDAP connection\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Can't get addresses from LDAP connection\n");
         tevent_req_error(req, ret);
         return;
     }

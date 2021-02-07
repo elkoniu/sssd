@@ -94,7 +94,7 @@ services_get_send(TALLOC_CTX *mem_ctx,
 
     state->op = sdap_id_op_create(state, state->conn->conn_cache);
     if (!state->op) {
-        DEBUG(SSSDBG_MINOR_FAILURE, "sdap_id_op_create failed\n");
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "sdap_id_op_create failed\n");
         ret = ENOMEM;
         goto error;
     }
@@ -135,12 +135,12 @@ services_get_send(TALLOC_CTX *mem_ctx,
     talloc_zfree(clean_name);
     talloc_zfree(clean_protocol);
     if (!state->filter) {
-        DEBUG(SSSDBG_MINOR_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
               "Failed to build the base filter\n");
         ret = ENOMEM;
         goto error;
     }
-    DEBUG(SSSDBG_TRACE_LIBS,
+    BE_REQ_DEBUG(SSSDBG_TRACE_LIBS, req,
           "Preparing to search for services with filter [%s]\n",
            state->filter);
 
