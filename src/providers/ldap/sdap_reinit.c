@@ -74,7 +74,7 @@ struct tevent_req* sdap_reinit_cleanup_send(TALLOC_CTX *mem_ctx,
 
     ret = sdap_reinit_clear_usn(state->sysdb, state->domain);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Unable to clear USN attributes [%d]: %s\n",
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Unable to clear USN attributes [%d]: %s\n",
                                     ret, strerror(ret));
         goto immediately;
     }
@@ -206,7 +206,7 @@ static void sdap_reinit_cleanup_done(struct tevent_req *subreq)
     ret = sdap_dom_enum_recv(subreq);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Domain enumeration failed [%d]: %s\n",
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Domain enumeration failed [%d]: %s\n",
                                     ret, strerror(ret));
         goto fail;
     }
@@ -218,7 +218,7 @@ static void sdap_reinit_cleanup_done(struct tevent_req *subreq)
      */
     ret = sysdb_set_enumerated(state->domain, SYSDB_HAS_ENUMERATED_ID, true);
     if (ret != EOK) {
-        DEBUG(SSSDBG_MINOR_FAILURE, "Could not mark domain as having "
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "Could not mark domain as having "
                                      "enumerated.\n");
         /* This error is non-fatal, so continue */
     }

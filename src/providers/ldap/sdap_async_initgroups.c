@@ -437,7 +437,7 @@ struct tevent_req *sdap_initgr_rfc2307_send(TALLOC_CTX *memctx,
     state->search_bases = opts->sdom->group_search_bases;
 
     if (!state->search_bases) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "Initgroups lookup request without a group search base\n");
         ret = EINVAL;
         goto done;
@@ -468,7 +468,7 @@ struct tevent_req *sdap_initgr_rfc2307_send(TALLOC_CTX *memctx,
     ret = sss_parse_internal_fqname(state, name,
                                     &shortname, NULL);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "Cannot parse %s\n", name);
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Cannot parse %s\n", name);
         goto done;
     }
 
@@ -480,7 +480,7 @@ struct tevent_req *sdap_initgr_rfc2307_send(TALLOC_CTX *memctx,
 
     oc_list = sdap_make_oc_list(state, opts->group_map);
     if (oc_list == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Failed to create objectClass list.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Failed to create objectClass list.\n");
         ret = ENOMEM;
         goto done;
     }
@@ -538,7 +538,7 @@ static errno_t sdap_initgr_rfc2307_next_base(struct tevent_req *req)
         return ENOMEM;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC,
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
           "Searching for groups with base [%s]\n",
            state->search_bases[state->base_iter]->basedn);
 
@@ -828,13 +828,13 @@ static struct tevent_req *sdap_initgr_nested_send(TALLOC_CTX *memctx,
 
     ret = sdap_get_user_primary_name(memctx, opts, user, dom, &state->username);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "User entry had no username\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "User entry had no username\n");
         goto immediate;
     }
 
     ret = sysdb_attrs_get_el(state->user, SYSDB_MEMBEROF, &state->memberof);
     if (ret || !state->memberof || state->memberof->num_values == 0) {
-        DEBUG(SSSDBG_CONF_SETTINGS, "User entry lacks original memberof ?\n");
+        BE_REQ_DEBUG(SSSDBG_CONF_SETTINGS, req, "User entry lacks original memberof ?\n");
         /* We can't find any groups for this user, so we'll
          * have to assume there aren't any. Just return
          * success here.
@@ -904,7 +904,7 @@ static errno_t sdap_initgr_nested_noderef_search(struct tevent_req *req)
 
     oc_list = sdap_make_oc_list(state, state->opts->group_map);
     if (oc_list == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Failed to create objectClass list.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Failed to create objectClass list.\n");
         return ENOMEM;
     }
 
@@ -1045,10 +1045,10 @@ static void sdap_initgr_nested_search(struct tevent_req *subreq)
         state->groups_cur++;
     } else if (count == 0) {
         /* this might be HBAC or sudo rule */
-        DEBUG(SSSDBG_FUNC_DATA, "Object %s not found. Skipping\n",
+        BE_REQ_DEBUG(SSSDBG_FUNC_DATA, req, "Object %s not found. Skipping\n",
               state->group_dns[state->cur]);
     } else {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Search for group %s, returned %zu results. Skipping\n",
               state->group_dns[state->cur], count);
     }
@@ -1096,7 +1096,7 @@ static void sdap_initgr_nested_store(struct tevent_req *req)
 
     ret = sysdb_transaction_start(state->sysdb);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Failed to start transaction\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Failed to start transaction\n");
         goto fail;
     }
     in_transaction = true;
@@ -1104,7 +1104,7 @@ static void sdap_initgr_nested_store(struct tevent_req *req)
     /* save the groups if they are not already */
     ret = sdap_initgr_store_groups(state);
     if (ret != EOK) {
-        DEBUG(SSSDBG_MINOR_FAILURE, "Could not save groups [%d]: %s\n",
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "Could not save groups [%d]: %s\n",
                   ret, strerror(ret));
         goto fail;
     }
@@ -1112,7 +1112,7 @@ static void sdap_initgr_nested_store(struct tevent_req *req)
     /* save the group memberships */
     ret = sdap_initgr_store_group_memberships(state);
     if (ret != EOK) {
-        DEBUG(SSSDBG_MINOR_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
               "Could not save group memberships [%d]: %s\n",
                   ret, strerror(ret));
         goto fail;
@@ -1121,7 +1121,7 @@ static void sdap_initgr_nested_store(struct tevent_req *req)
     /* save the user memberships */
     ret = sdap_initgr_store_user_memberships(state);
     if (ret != EOK) {
-        DEBUG(SSSDBG_MINOR_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
               "Could not save user memberships [%d]: %s\n",
                   ret, strerror(ret));
         goto fail;
@@ -1129,7 +1129,7 @@ static void sdap_initgr_nested_store(struct tevent_req *req)
 
     ret = sysdb_transaction_commit(state->sysdb);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Failed to commit transaction\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Failed to commit transaction\n");
         goto fail;
     }
     in_transaction = false;
@@ -1141,7 +1141,7 @@ fail:
     if (in_transaction) {
         tret = sysdb_transaction_cancel(state->sysdb);
         if (tret != EOK) {
-            DEBUG(SSSDBG_CRIT_FAILURE, "Failed to cancel transaction\n");
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Failed to cancel transaction\n");
         }
     }
     tevent_req_error(req, ret);
@@ -1626,7 +1626,7 @@ static struct tevent_req *sdap_initgr_rfc2307bis_send(
     state->orig_dn = orig_dn;
 
     if (!state->search_bases) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "Initgroups lookup request without a group search base\n");
         ret = EINVAL;
         goto done;
@@ -1661,7 +1661,7 @@ static struct tevent_req *sdap_initgr_rfc2307bis_send(
 
     oc_list = sdap_make_oc_list(state, opts->group_map);
     if (oc_list == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Failed to create objectClass list.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Failed to create objectClass list.\n");
         ret = ENOMEM;
         goto done;
     }
@@ -1720,7 +1720,7 @@ static errno_t sdap_initgr_rfc2307bis_next_base(struct tevent_req *req)
         return ENOMEM;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC,
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
           "Searching for parent groups for user [%s] with base [%s]\n",
            state->orig_dn, state->search_bases[state->base_iter]->basedn);
 
@@ -1760,7 +1760,7 @@ static void sdap_initgr_rfc2307bis_process(struct tevent_req *subreq)
         tevent_req_error(req, ret);
         return;
     }
-    DEBUG(SSSDBG_TRACE_LIBS,
+    BE_REQ_DEBUG(SSSDBG_TRACE_LIBS, req,
           "Found %zu parent groups for user [%s]\n", count, state->name);
 
     /* Add this batch of groups to the list */
@@ -1851,7 +1851,7 @@ static void sdap_initgr_rfc2307bis_done(struct tevent_req *subreq)
 
     ret = sysdb_transaction_start(state->sysdb);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Failed to start transaction\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Failed to start transaction\n");
         goto fail;
     }
     in_transaction = true;
@@ -1859,7 +1859,7 @@ static void sdap_initgr_rfc2307bis_done(struct tevent_req *subreq)
     /* save the groups if they are not cached */
     ret = save_rfc2307bis_groups(state);
     if (ret != EOK) {
-        DEBUG(SSSDBG_MINOR_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
               "Could not save groups memberships [%d]\n", ret);
         goto fail;
     }
@@ -1867,7 +1867,7 @@ static void sdap_initgr_rfc2307bis_done(struct tevent_req *subreq)
     /* save the group membership */
     ret = save_rfc2307bis_group_memberships(state);
     if (ret != EOK) {
-        DEBUG(SSSDBG_MINOR_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
               "Could not save group memberships [%d]\n", ret);
         goto fail;
     }
@@ -1875,7 +1875,7 @@ static void sdap_initgr_rfc2307bis_done(struct tevent_req *subreq)
     /* save the user memberships */
     ret = save_rfc2307bis_user_memberships(state);
     if (ret != EOK) {
-        DEBUG(SSSDBG_MINOR_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
               "Could not save user memberships [%d]\n", ret);
         goto fail;
     }
@@ -2292,7 +2292,7 @@ struct tevent_req *rfc2307bis_nested_groups_send(
     state->base_iter = 0;
     state->search_bases = search_bases;
     if (!state->search_bases) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "Initgroups nested lookup request "
                "without a group search base\n");
         ret = EINVAL;
@@ -2383,11 +2383,11 @@ static errno_t rfc2307bis_nested_groups_step(struct tevent_req *req)
         goto done;
     }
 
-    DEBUG(SSSDBG_TRACE_LIBS, "Processing group [%s]\n", state->primary_name);
+    BE_REQ_DEBUG(SSSDBG_TRACE_LIBS, req, "Processing group [%s]\n", state->primary_name);
 
     ret = hash_lookup(state->group_hash, &key, &value);
     if (ret == HASH_SUCCESS) {
-        DEBUG(SSSDBG_TRACE_INTERNAL, "Group [%s] was already processed, "
+        BE_REQ_DEBUG(SSSDBG_TRACE_INTERNAL, req, "Group [%s] was already processed, "
               "taking a shortcut\n", state->primary_name);
         state->processed_groups[state->group_iter] =
             talloc_get_type(value.ptr, struct sdap_nested_group);
@@ -2440,7 +2440,7 @@ static errno_t rfc2307bis_nested_groups_step(struct tevent_req *req)
 
     oc_list = sdap_make_oc_list(state, state->opts->group_map);
     if (oc_list == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Failed to create objectClass list.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Failed to create objectClass list.\n");
         ret = ENOMEM;
         goto done;
     }
@@ -2480,7 +2480,7 @@ static errno_t rfc2307bis_nested_groups_next_base(struct tevent_req *req)
         return ENOMEM;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC,
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
           "Searching for parent groups of group [%s] with base [%s]\n",
            state->orig_dn,
            state->search_bases[state->base_iter]->basedn);
@@ -2556,7 +2556,7 @@ static void rfc2307bis_nested_groups_process(struct tevent_req *subreq)
         return;
     }
 
-    DEBUG(SSSDBG_TRACE_LIBS,
+    BE_REQ_DEBUG(SSSDBG_TRACE_LIBS, req,
           "Found %zu parent groups of [%s]\n", count, state->orig_dn);
     ngr = state->processed_groups[state->group_iter];
 
@@ -2585,7 +2585,7 @@ static void rfc2307bis_nested_groups_process(struct tevent_req *subreq)
         ngr->parents_count += count;
 
         ngr->ldap_parents[ngr->parents_count] = NULL;
-        DEBUG(SSSDBG_TRACE_INTERNAL,
+        BE_REQ_DEBUG(SSSDBG_TRACE_INTERNAL, req,
               "Total of %zu direct parents after this iteration\n",
                ngr->parents_count);
     }
@@ -2670,7 +2670,7 @@ static void rfc2307bis_nested_groups_done(struct tevent_req *subreq)
     ret = rfc2307bis_nested_groups_recv(subreq);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_TRACE_FUNC, "rfc2307bis_nested failed [%d][%s]\n",
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "rfc2307bis_nested failed [%d][%s]\n",
                   ret, strerror(ret));
         tevent_req_error(req, ret);
         return;
@@ -2753,7 +2753,7 @@ struct tevent_req *sdap_get_initgr_send(TALLOC_CTX *memctx,
     state->user_base_iter = 0;
     state->user_search_bases = sdom->user_search_bases;
     if (!state->user_search_bases) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "Initgroups lookup request without a user search base\n");
         ret = EINVAL;
         goto done;
@@ -2818,7 +2818,7 @@ struct tevent_req *sdap_get_initgr_send(TALLOC_CTX *memctx,
             ret = sss_parse_internal_fqname(state, filter_value,
                                             &state->shortname, NULL);
             if (ret != EOK) {
-                DEBUG(SSSDBG_OP_FAILURE, "Cannot parse %s\n", filter_value);
+                BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Cannot parse %s\n", filter_value);
                 goto done;
             }
 
@@ -2830,13 +2830,13 @@ struct tevent_req *sdap_get_initgr_send(TALLOC_CTX *memctx,
         }
         break;
     default:
-        DEBUG(SSSDBG_CRIT_FAILURE, "Unsupported filter type [%d].\n",
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Unsupported filter type [%d].\n",
                                    filter_type);
         return NULL;
     }
 
     if (search_attr == NULL && state->user_base_filter == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "Missing search attribute name or filter.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Missing search attribute name or filter.\n");
         talloc_zfree(req);
         return NULL;
     }
@@ -2916,13 +2916,13 @@ static errno_t sdap_get_initgr_user_connect(struct tevent_req *req)
                                                        ? state->conn->conn_cache
                                                        : user_conn->conn_cache);
     if (state->user_op == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_id_op_create failed\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_id_op_create failed\n");
         return ENOMEM;
     }
 
     subreq = sdap_id_op_connect_send(state->user_op, state, &ret);
     if (subreq == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_id_op_connect_send failed\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_id_op_connect_send failed\n");
         return ret;
     }
 
@@ -2966,7 +2966,7 @@ static errno_t sdap_get_initgr_next_base(struct tevent_req *req)
         return ENOMEM;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC,
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
           "Searching for users with base [%s]\n",
            state->user_search_bases[state->user_base_iter]->basedn);
 
@@ -3018,7 +3018,7 @@ static void sdap_get_initgr_user(struct tevent_req *subreq)
     const char *cname;
     bool in_transaction = false;
 
-    DEBUG(SSSDBG_TRACE_ALL, "Receiving info for the user\n");
+    BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req, "Receiving info for the user\n");
 
     ret = sdap_get_generic_recv(subreq, state, &count, &usr_attrs);
     talloc_zfree(subreq);
@@ -3058,7 +3058,7 @@ static void sdap_get_initgr_user(struct tevent_req *subreq)
     } else if (count == 1) {
         state->orig_user = usr_attrs[0];
     } else if (count != 1) {
-        DEBUG(SSSDBG_FUNC_DATA,
+        BE_REQ_DEBUG(SSSDBG_FUNC_DATA, req,
               "The search returned %zu entries, need to match the correct one\n",
               count);
 
@@ -3068,7 +3068,7 @@ static void sdap_get_initgr_user(struct tevent_req *subreq)
          */
         ret = sdap_search_initgr_user_in_batch(state, usr_attrs, count);
         if (ret != EOK) {
-            DEBUG(SSSDBG_OP_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
                   "sdap_search_initgr_user_in_batch failed [%d]: %s :"
                   "SSSD can't select a user that matches domain %s\n",
                   ret, sss_strerror(ret), state->dom->name);
@@ -3079,12 +3079,12 @@ static void sdap_get_initgr_user(struct tevent_req *subreq)
 
     ret = sysdb_transaction_start(state->sysdb);
     if (ret) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Failed to start transaction\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Failed to start transaction\n");
         goto fail;
     }
     in_transaction = true;
 
-    DEBUG(SSSDBG_TRACE_ALL, "Storing the user\n");
+    BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req, "Storing the user\n");
 
     ret = sdap_save_user(state, state->opts, state->dom, state->orig_user,
                          NULL, NULL, 0);
@@ -3092,23 +3092,23 @@ static void sdap_get_initgr_user(struct tevent_req *subreq)
         goto fail;
     }
 
-    DEBUG(SSSDBG_TRACE_ALL, "Commit change\n");
+    BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req, "Commit change\n");
 
     ret = sysdb_transaction_commit(state->sysdb);
     if (ret) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Failed to commit transaction\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Failed to commit transaction\n");
         goto fail;
     }
     in_transaction = false;
 
     ret = sysdb_get_real_name(state, state->dom, state->filter_value, &cname);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "Cannot canonicalize username\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Cannot canonicalize username\n");
         tevent_req_error(req, ret);
         return;
     }
 
-    DEBUG(SSSDBG_TRACE_ALL, "Process user's groups\n");
+    BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req, "Process user's groups\n");
 
     switch (state->opts->schema_type) {
     case SDAP_SCHEMA_RFC2307:
@@ -3214,32 +3214,32 @@ errno_t sdap_ad_check_domain_local_groups(struct tevent_req *req)
 
     local_sdom = sdap_domain_get(state->id_ctx->opts, state->dom->parent);
     if (local_sdom == NULL || local_sdom->pvt == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "No ID ctx available for [%s].\n",
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "No ID ctx available for [%s].\n",
                                     state->dom->parent->name);
         return EINVAL;
     }
 
     ret = sysdb_attrs_get_string(state->orig_user, SYSDB_NAME, &orig_name);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Missing name in user object.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Missing name in user object.\n");
         return ret;
     }
 
     sysdb_name = sss_create_internal_fqname(state, orig_name, state->dom->name);
     if (sysdb_name == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "sss_create_internal_fqname failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sss_create_internal_fqname failed.\n");
         return ENOMEM;
     }
 
     ret = sysdb_initgroups(state, state->dom, sysdb_name, &res);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "sysdb_initgroups failed for user [%s].\n",
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "sysdb_initgroups failed for user [%s].\n",
                                    sysdb_name);
         return ret;
     }
 
     if (res->count == 0) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "sysdb_initgroups returned no results for user [%s].\n",
               sysdb_name);
         return EINVAL;
@@ -3250,7 +3250,7 @@ errno_t sdap_ad_check_domain_local_groups(struct tevent_req *req)
      * a domain local group. */
     ret = sysdb_msg2attrs(state, res->count, res->msgs, &groups);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "sysdb_msg2attrs failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sysdb_msg2attrs failed.\n");
         return ret;
     }
 
@@ -3258,7 +3258,7 @@ errno_t sdap_ad_check_domain_local_groups(struct tevent_req *req)
                              state->opts, state->sysdb, state->dom->parent,
                              groups, res->count);
     if (subreq == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_ad_get_domain_local_groups_send failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_ad_get_domain_local_groups_send failed.\n");
         return ENOMEM;
     }
 
@@ -3303,7 +3303,7 @@ static void sdap_get_initgr_done(struct tevent_req *subreq)
     struct sdap_options *opts = state->opts;
     struct ldb_message *msg;
 
-    DEBUG(SSSDBG_TRACE_ALL, "Initgroups done\n");
+    BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req, "Initgroups done\n");
 
     tmp_ctx = talloc_new(NULL);
     if (!tmp_ctx) {
@@ -3339,7 +3339,7 @@ static void sdap_get_initgr_done(struct tevent_req *subreq)
 
     talloc_zfree(subreq);
     if (ret) {
-        DEBUG(SSSDBG_TRACE_ALL, "Error in initgroups: [%d][%s]\n",
+        BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req, "Error in initgroups: [%d][%s]\n",
                   ret, strerror(ret));
         goto done;
     }
@@ -3349,7 +3349,7 @@ static void sdap_get_initgr_done(struct tevent_req *subreq)
      */
 
     if (state->use_id_mapping) {
-        DEBUG(SSSDBG_TRACE_LIBS,
+        BE_REQ_DEBUG(SSSDBG_TRACE_LIBS, req,
               "Mapping primary group to unix ID\n");
 
         /* The primary group ID is just the RID part of the objectSID
@@ -3370,7 +3370,7 @@ static void sdap_get_initgr_done(struct tevent_req *subreq)
         ret = sdap_idmap_get_dom_sid_from_object(tmp_ctx, sid_str,
                                                  &dom_sid_str);
         if (ret != EOK) {
-            DEBUG(SSSDBG_MINOR_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
                   "Could not parse domain SID from [%s]\n", sid_str);
             goto done;
         }
@@ -3380,7 +3380,7 @@ static void sdap_get_initgr_done(struct tevent_req *subreq)
                 opts->user_map[SDAP_AT_USER_PRIMARY_GROUP].sys_name,
                 &primary_gid);
         if (ret != EOK) {
-            DEBUG(SSSDBG_MINOR_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
                   "no primary group ID provided\n");
             ret = EINVAL;
             goto done;
@@ -3403,7 +3403,7 @@ static void sdap_get_initgr_done(struct tevent_req *subreq)
         ret = sysdb_attrs_get_uint32_t(state->orig_user, SYSDB_GIDNUM,
                                        &primary_gid);
         if (ret != EOK) {
-            DEBUG(SSSDBG_TRACE_FUNC, "Could not find user's primary GID\n");
+            BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Could not find user's primary GID\n");
             goto done;
         }
     }
@@ -3411,7 +3411,7 @@ static void sdap_get_initgr_done(struct tevent_req *subreq)
     ret = sysdb_search_group_by_gid(tmp_ctx, state->dom, primary_gid, NULL,
                                     &msg);
     if (ret == EOK) {
-        DEBUG(SSSDBG_TRACE_FUNC,
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
               "Primary group already cached, nothing to do.\n");
     } else {
         gid = talloc_asprintf(state, "%lu", (unsigned long)primary_gid);
@@ -3436,15 +3436,15 @@ static void sdap_get_initgr_done(struct tevent_req *subreq)
 
     ret = sdap_ad_check_domain_local_groups(req);
     if (ret == EAGAIN) {
-        DEBUG(SSSDBG_TRACE_ALL,
+        BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req,
               "Checking for domain local group memberships.\n");
         talloc_free(tmp_ctx);
         return;
     } else if (ret == EOK) {
-        DEBUG(SSSDBG_TRACE_ALL,
+        BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req,
               "No need to check for domain local group memberships.\n");
     } else {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "sdap_ad_check_domain_local_groups failed, "
               "memberships to domain local groups might be missing.\n");
         /* do not let the request fail completely because we already have at
@@ -3477,14 +3477,14 @@ static void sdap_get_initgr_pgid(struct tevent_req *subreq)
 
     ret = sdap_ad_check_domain_local_groups(req);
     if (ret == EAGAIN) {
-        DEBUG(SSSDBG_TRACE_ALL,
+        BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req,
               "Checking for domain local group memberships.\n");
         return;
     } else if (ret == EOK) {
-        DEBUG(SSSDBG_TRACE_ALL,
+        BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req,
               "No need to check for domain local group memberships.\n");
     } else {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "sdap_ad_check_domain_local_groups failed, "
               "memberships to domain local groups might be missing.\n");
         /* do not let the request fail completely because we already have at

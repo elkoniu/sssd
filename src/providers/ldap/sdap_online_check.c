@@ -124,11 +124,11 @@ static void sdap_online_check_connect_done(struct tevent_req *subreq)
     }
 
     if (reinit) {
-        DEBUG(SSSDBG_TRACE_FUNC, "Server reinitialization detected. "
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Server reinitialization detected. "
               "Cleaning cache.\n");
         subreq = sdap_reinit_cleanup_send(state, state->be_ctx, id_ctx);
         if (subreq == NULL) {
-            DEBUG(SSSDBG_CRIT_FAILURE, "Unable to perform reinitialization "
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Unable to perform reinitialization "
                   "clean up.\n");
             /* not fatal */
             goto done;
@@ -159,11 +159,11 @@ static void sdap_online_check_reinit_done(struct tevent_req *subreq)
     ret = sdap_reinit_cleanup_recv(subreq);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Unable to perform reinitialization "
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Unable to perform reinitialization "
               "clean up [%d]: %s\n", ret, strerror(ret));
         /* not fatal */
     } else {
-        DEBUG(SSSDBG_TRACE_FUNC, "Reinitialization clean up completed\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Reinitialization clean up completed\n");
     }
 
     tevent_req_done(req);
@@ -196,7 +196,7 @@ sdap_online_check_handler_send(TALLOC_CTX *mem_ctx,
     req = tevent_req_create(mem_ctx, &state,
                             struct sdap_online_check_handler_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
         return NULL;
     }
 

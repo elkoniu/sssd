@@ -105,7 +105,7 @@ sdap_host_info_send(TALLOC_CTX *mem_ctx,
 
     ret = sdap_host_info_next(req, state);
     if (ret == EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "No host search base configured?\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "No host search base configured?\n");
         ret = EINVAL;
     }
 
@@ -152,7 +152,7 @@ static errno_t sdap_host_info_next(struct tevent_req *req,
                                                   SDAP_ENUM_SEARCH_TIMEOUT),
                                    true);
     if (subreq == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Error requesting host info\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Error requesting host info\n");
         talloc_zfree(state->cur_filter);
         return EIO;
     }

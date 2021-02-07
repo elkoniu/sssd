@@ -150,13 +150,13 @@ ldap_id_enumeration_send(TALLOC_CTX *mem_ctx,
     req = tevent_req_create(mem_ctx, &state,
                             struct ldap_enumeration_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
         return NULL;
     }
 
     ectx = talloc_get_type(pvt, struct ldap_enum_ctx);
     if (ectx == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Cannot retrieve ldap_enum_ctx!\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Cannot retrieve ldap_enum_ctx!\n");
         ret = EFAULT;
         goto fail;
     }
@@ -169,7 +169,7 @@ ldap_id_enumeration_send(TALLOC_CTX *mem_ctx,
     if (subreq == NULL) {
         /* The ptask API will reschedule the enumeration on its own on
          * failure */
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Failed to schedule enumeration, retrying later!\n");
         ret = EIO;
         goto fail;

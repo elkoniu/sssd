@@ -233,13 +233,13 @@ ldap_resolver_enumeration_send(TALLOC_CTX *mem_ctx,
 
     req = tevent_req_create(mem_ctx, &state, struct ldap_resolver_enum_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
         return NULL;
     }
 
     resolver_ctx = talloc_get_type(pvt, struct sdap_resolver_ctx);
     if (resolver_ctx == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Cannot retrieve sdap_resolver_ctx!\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Cannot retrieve sdap_resolver_ctx!\n");
         ret = EFAULT;
         goto fail;
     }
@@ -279,7 +279,7 @@ ldap_resolver_enumeration_done(struct tevent_req *subreq)
 
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "Could not enumerate domain\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Could not enumerate domain\n");
         tevent_req_error(req, ret);
         return;
     }

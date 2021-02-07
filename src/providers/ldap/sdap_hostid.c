@@ -65,7 +65,7 @@ hosts_get_send(TALLOC_CTX *memctx,
 
     state->op = sdap_id_op_create(state, id_ctx->conn->conn_cache);
     if (!state->op) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_id_op_create failed\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_id_op_create failed\n");
         ret = ENOMEM;
         goto fail;
     }
@@ -166,7 +166,7 @@ hosts_get_done(struct tevent_req *subreq)
     }
 
     if (state->count == 0) {
-        DEBUG(SSSDBG_FUNC_DATA,
+        BE_REQ_DEBUG(SSSDBG_FUNC_DATA, req,
               "No host with name [%s] found.\n", state->name);
 
         ret = sysdb_delete_ssh_host(state->domain, state->name);
@@ -179,7 +179,7 @@ hosts_get_done(struct tevent_req *subreq)
     }
 
     if (state->count > 1) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "Found more than one host with name [%s].\n", state->name);
         ret = EINVAL;
         goto done;

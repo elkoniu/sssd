@@ -149,11 +149,11 @@ sdap_access_send(TALLOC_CTX *mem_ctx,
     state->conn = conn;
     state->current_rule = 0;
 
-    DEBUG(SSSDBG_TRACE_FUNC,
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
           "Performing access check for user [%s]\n", pd->user);
 
     if (access_ctx->access_rule[0] == LDAP_ACCESS_EMPTY) {
-        DEBUG(SSSDBG_MINOR_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
               "No access rules defined, access denied.\n");
         ret = ERR_ACCESS_DENIED;
         goto done;
@@ -177,7 +177,7 @@ sdap_access_send(TALLOC_CTX *mem_ctx,
         }
 
         if (res->count != 1) {
-            DEBUG(SSSDBG_CRIT_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
                   "Invalid response from sysdb_get_user_attr\n");
             ret = EINVAL;
             goto done;
@@ -347,7 +347,7 @@ static void sdap_access_done(struct tevent_req *subreq)
         break;
     default:
         ret = EINVAL;
-        DEBUG(SSSDBG_MINOR_FAILURE, "Unknown access control type: %d.\n",
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "Unknown access control type: %d.\n",
               state->ac_type);
         break;
     }
@@ -355,9 +355,9 @@ static void sdap_access_done(struct tevent_req *subreq)
     talloc_zfree(subreq);
     if (ret != EOK) {
         if (ret == ERR_ACCESS_DENIED) {
-            DEBUG(SSSDBG_TRACE_FUNC, "Access was denied.\n");
+            BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Access was denied.\n");
         } else {
-            DEBUG(SSSDBG_CRIT_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
                   "Error retrieving access check result.\n");
         }
         tevent_req_error(req, ret);
@@ -856,7 +856,7 @@ static struct tevent_req *sdap_access_filter_send(TALLOC_CTX *mem_ctx,
 
     if (access_ctx->filter == NULL || *access_ctx->filter == '\0') {
         /* If no filter is set, default to restrictive */
-        DEBUG(SSSDBG_TRACE_FUNC, "No filter set. Access is denied.\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "No filter set. Access is denied.\n");
         ret = ERR_ACCESS_DENIED;
         goto done;
     }
@@ -869,7 +869,7 @@ static struct tevent_req *sdap_access_filter_send(TALLOC_CTX *mem_ctx,
     state->access_ctx = access_ctx;
     state->domain = domain;
 
-    DEBUG(SSSDBG_TRACE_FUNC,
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
           "Performing access filter check for user [%s]\n", username);
 
     state->cached_access = ldb_msg_find_attr_as_bool(user_entry,
@@ -892,7 +892,7 @@ static struct tevent_req *sdap_access_filter_send(TALLOC_CTX *mem_ctx,
     /* Construct the filter */
     ret = sss_parse_internal_fqname(state, username, &name, NULL);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Could not parse [%s] into name and "
               "domain components, access might fail\n", username);
         name = discard_const(username);
@@ -911,18 +911,18 @@ static struct tevent_req *sdap_access_filter_send(TALLOC_CTX *mem_ctx,
         state->opts->user_map[SDAP_OC_USER].name,
         state->access_ctx->filter);
     if (state->filter == NULL) {
-        DEBUG(SSSDBG_FATAL_FAILURE, "Could not construct access filter\n");
+        BE_REQ_DEBUG(SSSDBG_FATAL_FAILURE, req, "Could not construct access filter\n");
         ret = ENOMEM;
         goto done;
     }
     talloc_zfree(clean_username);
 
-    DEBUG(SSSDBG_TRACE_FUNC, "Checking filter against LDAP\n");
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Checking filter against LDAP\n");
 
     state->sdap_op = sdap_id_op_create(state,
                                        state->conn->conn_cache);
     if (!state->sdap_op) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_id_op_create failed\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_id_op_create failed\n");
         ret = ENOMEM;
         goto done;
     }
@@ -968,7 +968,7 @@ static int sdap_access_filter_retry(struct tevent_req *req)
 
     subreq = sdap_id_op_connect_send(state->sdap_op, state, &ret);
     if (!subreq) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "sdap_id_op_connect_send failed: %d (%s)\n", ret, strerror(ret));
         return ret;
     }
@@ -1016,7 +1016,7 @@ static void sdap_access_filter_connect_done(struct tevent_req *subreq)
                                                   SDAP_SEARCH_TIMEOUT),
                                    false);
     if (subreq == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Could not start LDAP communication\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Could not start LDAP communication\n");
         tevent_req_error(req, EIO);
         return;
     }
@@ -1051,10 +1051,10 @@ static void sdap_access_filter_done(struct tevent_req *subreq)
             ret = sdap_access_decide_offline(state->cached_access);
         } else if (ret == ERR_INVALID_FILTER) {
             sss_log(SSS_LOG_ERR, MALFORMED_FILTER, state->filter);
-            DEBUG(SSSDBG_CRIT_FAILURE, MALFORMED_FILTER, state->filter);
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, MALFORMED_FILTER, state->filter);
             ret = ERR_ACCESS_DENIED;
         } else {
-            DEBUG(SSSDBG_CRIT_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
                   "sdap_get_generic_send() returned error [%d][%s]\n",
                       ret, sss_strerror(ret));
         }
@@ -1068,13 +1068,13 @@ static void sdap_access_filter_done(struct tevent_req *subreq)
      * Anything else is an error
      */
     if (num_results < 1) {
-        DEBUG(SSSDBG_CONF_SETTINGS,
+        BE_REQ_DEBUG(SSSDBG_CONF_SETTINGS, req,
               "User [%s] was not found with the specified filter. "
                   "Denying access.\n", state->username);
         found = false;
     }
     else if (results == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "num_results > 0, but results is NULL\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "num_results > 0, but results is NULL\n");
         ret = ERR_INTERNAL;
         goto done;
     }
@@ -1082,7 +1082,7 @@ static void sdap_access_filter_done(struct tevent_req *subreq)
         /* It should not be possible to get more than one reply
          * here, since we're doing a base-scoped search
          */
-        DEBUG(SSSDBG_CRIT_FAILURE, "Received multiple replies\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Received multiple replies\n");
         ret = ERR_INTERNAL;
         goto done;
     }
@@ -1092,14 +1092,14 @@ static void sdap_access_filter_done(struct tevent_req *subreq)
 
     if (found) {
         /* Save "allow" to the cache for future offline access checks. */
-        DEBUG(SSSDBG_TRACE_FUNC, "Access granted by online lookup\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Access granted by online lookup\n");
         ret = EOK;
     }
     else {
         /* Save "disallow" to the cache for future offline
          * access checks.
          */
-        DEBUG(SSSDBG_TRACE_FUNC, "Access denied by online lookup\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Access denied by online lookup\n");
         ret = ERR_ACCESS_DENIED;
     }
 
@@ -1109,7 +1109,7 @@ static void sdap_access_filter_done(struct tevent_req *subreq)
         /* Failing to save to the cache is non-fatal.
          * Just return the result.
          */
-        DEBUG(SSSDBG_CRIT_FAILURE, "Failed to set user access attribute\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Failed to set user access attribute\n");
         goto done;
     }
 
@@ -1442,7 +1442,7 @@ sdap_access_ppolicy_send(TALLOC_CTX *mem_ctx,
     state->ppolicy_dns_index = 0;
     state->pwpol_mode = pwpol_mode;
 
-    DEBUG(SSSDBG_TRACE_FUNC,
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
           "Performing access ppolicy check for user [%s]\n", username);
 
     state->cached_access = ldb_msg_find_attr_as_bool(
@@ -1461,12 +1461,12 @@ sdap_access_ppolicy_send(TALLOC_CTX *mem_ctx,
         goto done;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "Checking ppolicy against LDAP\n");
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Checking ppolicy against LDAP\n");
 
     state->sdap_op = sdap_id_op_create(state,
                                        state->conn->conn_cache);
     if (!state->sdap_op) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_id_op_create failed\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_id_op_create failed\n");
         ret = ENOMEM;
         goto done;
     }
@@ -1497,7 +1497,7 @@ static int sdap_access_ppolicy_retry(struct tevent_req *req)
     state = tevent_req_data(req, struct sdap_access_ppolicy_req_ctx);
     subreq = sdap_id_op_connect_send(state->sdap_op, state, &ret);
     if (!subreq) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "sdap_id_op_connect_send failed: %d (%s)\n",
               ret, sss_strerror(ret));
         return ret;
@@ -1563,7 +1563,7 @@ static void sdap_access_ppolicy_connect_done(struct tevent_req *subreq)
     if (ppolicy_dn != NULL) {
         state->ppolicy_dns = talloc_array(state, const char*, 2);
         if (state->ppolicy_dns == NULL) {
-            DEBUG(SSSDBG_CRIT_FAILURE, "Could not allocate ppolicy_dns.\n");
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Could not allocate ppolicy_dns.\n");
             tevent_req_error(req, ERR_INTERNAL);
             return;
         }
@@ -1573,7 +1573,7 @@ static void sdap_access_ppolicy_connect_done(struct tevent_req *subreq)
 
     } else {
         /* try to determine default value */
-        DEBUG(SSSDBG_CONF_SETTINGS,
+        BE_REQ_DEBUG(SSSDBG_CONF_SETTINGS, req,
               "ldap_pwdlockout_dn was not defined in configuration file.\n");
 
         state->ppolicy_dns = get_default_ppolicy_dns(state, state->opts->sdom);
@@ -1588,7 +1588,7 @@ static void sdap_access_ppolicy_connect_done(struct tevent_req *subreq)
      */
     ret = sdap_access_ppolicy_get_lockout_step(req);
     if (ret != EOK && ret != EAGAIN) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "sdap_access_ppolicy_get_lockout_step failed: [%d][%s]\n",
               ret, sss_strerror(ret));
         tevent_req_error(req, ERR_INTERNAL);
@@ -1612,12 +1612,12 @@ sdap_access_ppolicy_get_lockout_step(struct tevent_req *req)
 
     /* no more DNs to try */
     if (state->ppolicy_dns[state->ppolicy_dns_index] == NULL) {
-        DEBUG(SSSDBG_TRACE_FUNC, "No more DNs to try.\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "No more DNs to try.\n");
         ret = EOK;
         goto done;
     }
 
-    DEBUG(SSSDBG_CONF_SETTINGS,
+    BE_REQ_DEBUG(SSSDBG_CONF_SETTINGS, req,
           "Trying to find out if ppolicy is enabled using the DN: %s\n",
           state->ppolicy_dns[state->ppolicy_dns_index]);
 
@@ -1633,7 +1633,7 @@ sdap_access_ppolicy_get_lockout_step(struct tevent_req *req)
                                                   SDAP_SEARCH_TIMEOUT),
                                    false);
     if (subreq == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Could not start LDAP communication\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Could not start LDAP communication\n");
         ret = EIO;
         goto done;
     }
@@ -1663,7 +1663,7 @@ static void sdap_access_ppolicy_get_lockout_done(struct tevent_req *subreq)
     ret = sdap_get_generic_recv(subreq, state, &num_results, &results);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "Cannot retrieve ppolicy\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Cannot retrieve ppolicy\n");
         ret = ERR_NETWORK_IO;
         goto done;
     }
@@ -1679,12 +1679,12 @@ static void sdap_access_ppolicy_get_lockout_done(struct tevent_req *subreq)
         ret = sdap_access_ppolicy_get_lockout_step(req);
         if (ret == EOK) {
             /* No more search bases to try */
-            DEBUG(SSSDBG_CONF_SETTINGS,
+            BE_REQ_DEBUG(SSSDBG_CONF_SETTINGS, req,
                   "[%s] was not found. Granting access.\n",
                   SYSDB_LDAP_ACCESS_LOCKOUT);
         } else {
             if (ret != EAGAIN) {
-                DEBUG(SSSDBG_CRIT_FAILURE,
+                BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
                       "sdap_access_ppolicy_get_lockout_step failed: "
                       "[%d][%s]\n",
                       ret, sss_strerror(ret));
@@ -1692,21 +1692,21 @@ static void sdap_access_ppolicy_get_lockout_done(struct tevent_req *subreq)
             goto done;
         }
     } else if (results == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "num_results > 0, but results is NULL\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "num_results > 0, but results is NULL\n");
         ret = ERR_INTERNAL;
         goto done;
     } else if (num_results > 1) {
         /* It should not be possible to get more than one reply
          * here, since we're doing a base-scoped search
          */
-        DEBUG(SSSDBG_CRIT_FAILURE, "Received multiple replies\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Received multiple replies\n");
         ret = ERR_INTERNAL;
         goto done;
     } else { /* Ok, we got a single reply */
         ret = sysdb_attrs_get_bool(results[0], SYSDB_LDAP_ACCESS_LOCKOUT,
                                    &pwdLockout);
         if (ret != EOK) {
-            DEBUG(SSSDBG_MINOR_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
                   "Error reading %s: [%s]\n", SYSDB_LDAP_ACCESS_LOCKOUT,
                   sss_strerror(ret));
             ret = ERR_INTERNAL;
@@ -1715,19 +1715,19 @@ static void sdap_access_ppolicy_get_lockout_done(struct tevent_req *subreq)
     }
 
     if (pwdLockout) {
-        DEBUG(SSSDBG_TRACE_FUNC,
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
               "Password policy is enabled on LDAP server.\n");
 
         /* ppolicy is enabled => find out if account is locked */
         ret = sdap_access_ppolicy_step(req);
         if (ret != EOK && ret != EAGAIN) {
-            DEBUG(SSSDBG_CRIT_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
                   "sdap_access_ppolicy_step failed: [%d][%s].\n",
                   ret, sss_strerror(ret));
         }
         goto done;
     } else {
-        DEBUG(SSSDBG_TRACE_FUNC,
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
               "Password policy is disabled on LDAP server "
               "- storing 'access granted' in sysdb.\n");
         tret = sdap_save_user_cache_bool(state->domain, state->username,
@@ -1737,7 +1737,7 @@ static void sdap_access_ppolicy_get_lockout_done(struct tevent_req *subreq)
             /* Failing to save to the cache is non-fatal.
              * Just return the result.
              */
-            DEBUG(SSSDBG_CRIT_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
                   "Failed to set user locked attribute\n");
             goto done;
         }
@@ -1751,7 +1751,7 @@ done:
         /* release connection */
         tret = sdap_id_op_done(state->sdap_op, ret, &dp_error);
         if (tret != EOK) {
-            DEBUG(SSSDBG_CRIT_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
                   "sdap_get_generic_send() returned error [%d][%s]\n",
                   ret, sss_strerror(ret));
         }
@@ -1788,7 +1788,7 @@ errno_t sdap_access_ppolicy_step(struct tevent_req *req)
                                    false);
 
     if (subreq == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "sdap_get_generic_send failed.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "sdap_get_generic_send failed.\n");
         ret = ENOMEM;
         goto done;
     }
@@ -1913,7 +1913,7 @@ static void sdap_access_ppolicy_step_done(struct tevent_req *subreq)
         } else if (dp_error == DP_ERR_OFFLINE) {
             ret = sdap_access_decide_offline(state->cached_access);
         } else {
-            DEBUG(SSSDBG_CRIT_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
                   "sdap_id_op_done() returned error [%d][%s]\n",
                   ret, sss_strerror(ret));
         }
@@ -1927,18 +1927,18 @@ static void sdap_access_ppolicy_step_done(struct tevent_req *subreq)
      * Anything else is an error
      */
     if (num_results < 1) {
-        DEBUG(SSSDBG_CONF_SETTINGS,
+        BE_REQ_DEBUG(SSSDBG_CONF_SETTINGS, req,
               "User [%s] was not found with the specified filter. "
               "Denying access.\n", state->username);
     } else if (results == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "num_results > 0, but results is NULL\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "num_results > 0, but results is NULL\n");
         ret = ERR_INTERNAL;
         goto done;
     } else if (num_results > 1) {
         /* It should not be possible to get more than one reply
          * here, since we're doing a base-scoped search
          */
-        DEBUG(SSSDBG_CRIT_FAILURE, "Received multiple replies\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Received multiple replies\n");
         ret = ERR_INTERNAL;
         goto done;
     } else { /* Ok, we got a single reply */
@@ -1960,15 +1960,15 @@ static void sdap_access_ppolicy_step_done(struct tevent_req *subreq)
                                     &locked);
             if (ret != EOK) {
                 if (ret == ERR_TIMESPEC_NOT_SUPPORTED) {
-                    DEBUG(SSSDBG_MINOR_FAILURE,
+                    BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
                           "timezone specifier in ppolicy is not supported\n");
                 } else {
-                    DEBUG(SSSDBG_MINOR_FAILURE,
+                    BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
                           "is_account_locked failed: %d:[%s].\n",
                           ret, sss_strerror(ret));
                 }
 
-                DEBUG(SSSDBG_MINOR_FAILURE,
+                BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
                       "Account will be considered to be locked.\n");
                 locked = true;
             }
@@ -1976,18 +1976,18 @@ static void sdap_access_ppolicy_step_done(struct tevent_req *subreq)
             /* Attribute SYSDB_LDAP_ACCESS_LOCKED_TIME in not be present unless
              * user's account is blocked by password policy.
              */
-            DEBUG(SSSDBG_TRACE_INTERNAL,
+            BE_REQ_DEBUG(SSSDBG_TRACE_INTERNAL, req,
                   "Attribute %s failed to be obtained - [%d][%s].\n",
                   SYSDB_LDAP_ACCESS_LOCKED_TIME, ret, strerror(ret));
         }
     }
 
     if (locked) {
-        DEBUG(SSSDBG_TRACE_FUNC,
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
               "Access denied by online lookup - account is locked.\n");
         ret = ERR_ACCESS_DENIED;
     } else {
-        DEBUG(SSSDBG_TRACE_FUNC,
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
               "Access granted by online lookup - account is not locked.\n");
         ret = EOK;
     }
@@ -2004,7 +2004,7 @@ static void sdap_access_ppolicy_step_done(struct tevent_req *subreq)
         /* Failing to save to the cache is non-fatal.
          * Just return the result.
          */
-        DEBUG(SSSDBG_CRIT_FAILURE, "Failed to set user locked attribute\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Failed to set user locked attribute\n");
         goto done;
     }
 
