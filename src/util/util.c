@@ -32,6 +32,7 @@
 
 #include "util/util.h"
 #include "util/sss_utf8.h"
+#include "providers/data_provider/dp_private.h"
 
 int socket_activated = 0;
 int dbus_activated = 0;
@@ -1048,4 +1049,40 @@ errno_t sss_canonicalize_ip_address(TALLOC_CTX *mem_ctx,
     }
 
     return EOK;
+}
+
+/* According to the https://tools.ietf.org/html/rfc2181#section-11.
+ * practically no restrictions are imposed to a domain name per se.
+ *
+ * But since SSSD uses this name as a part of log file name,
+ * it is still required to avoid '/' as a safety measure.
+ */
+bool is_valid_domain_name(const char *domain)
+{
+    if (strchr(domain, '/') != NULL) {
+        DEBUG(SSSDBG_CRIT_FAILURE,
+              "Forbidden symbol '/' in the domain name '%s'\n", domain);
+        return false;
+    }
+
+    return true;
+}
+
+const char * find_req_name(void *mem_ctx)
+{
+    char *name = NULL;
+    void *current = mem_ctx;
+
+    while (current) {
+        /* Check if we are on right data struct already */
+        if (0 == strcmp("struct dp_req", talloc_get_name(current))) {
+            name = ((struct dp_req *)current)->name;
+            break;
+        }
+
+        /* Find out next the candidate for lookup */
+        current = talloc_parent(current);
+    }
+
+    return name;
 }
