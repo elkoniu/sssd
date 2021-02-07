@@ -180,6 +180,9 @@ void talloc_log_fn(const char *msg);
 #define SSS_LOG_INFO    6   /* informational */
 #define SSS_LOG_DEBUG   7   /* debug-level messages */
 
+#define BE_REQ_DEBUG(level, req, fmt, ...) \
+    DEBUG(level, "BE Request [%s]: " fmt "\n", (find_req_name(req) ?: "Unknown"), ##__VA_ARGS__)
+
 void sss_log(int priority, const char *format, ...) SSS_ATTRIBUTE_PRINTF(2, 3);
 void sss_log_ext(int priority, int facility, const char *format, ...) SSS_ATTRIBUTE_PRINTF(3, 4);
 
@@ -797,5 +800,7 @@ errno_t create_preauth_indicator(void);
 #ifndef N_ELEMENTS
 #define N_ELEMENTS(arr) (sizeof(arr) / sizeof(arr[0]))
 #endif
+
+const char * find_req_name(void *mem_ctx);
 
 #endif /* __SSSD_UTIL_H__ */
