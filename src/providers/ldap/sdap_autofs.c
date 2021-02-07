@@ -91,7 +91,7 @@ sdap_autofs_enumerate_send(TALLOC_CTX *mem_ctx,
 
     state->op = sdap_id_op_create(state, state->ctx->conn->conn_cache);
     if (!state->op) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_id_op_create failed\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_id_op_create failed\n");
         ret = ENOMEM;
         goto fail;
     }
@@ -153,7 +153,7 @@ sdap_autofs_enumerate_connect_done(struct tevent_req *subreq)
                                             state->ctx->opts,
                                             state->map_name);
     if (!subreq) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "sdap_autofs_setautomntent_send failed\n");
         tevent_req_error(req, ENOMEM);
         return;
@@ -195,7 +195,7 @@ sdap_autofs_enumerate_done(struct tevent_req *subreq)
     if (ret == ENOENT) {
         ret = sysdb_delete_autofsmap(state->ctx->be->domain, state->map_name);
         if (ret != EOK && ret != ENOENT) {
-            DEBUG(SSSDBG_OP_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
                 "Cannot delete autofs map %s [%d]: %s\n",
                  state->map_name, ret, strerror(ret));
             tevent_req_error(req, ret);
@@ -242,11 +242,11 @@ sdap_autofs_enumerate_handler_send(TALLOC_CTX *mem_ctx,
     req = tevent_req_create(mem_ctx, &state,
                             struct sdap_autofs_enumerate_handler_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
         return NULL;
     }
 
-    DEBUG(SSSDBG_FUNC_DATA, "Requested refresh for: %s\n", data->mapname);
+    BE_REQ_DEBUG(SSSDBG_FUNC_DATA, req, "Requested refresh for: %s\n", data->mapname);
 
     sdap_autofs_invalidate_maps(id_ctx, data->mapname);
 
@@ -326,13 +326,13 @@ sdap_autofs_get_map_handler_send(TALLOC_CTX *mem_ctx,
         return NULL;
     }
 
-    DEBUG(SSSDBG_FUNC_DATA, "Requested refresh for: %s\n", data->mapname);
+    BE_REQ_DEBUG(SSSDBG_FUNC_DATA, req, "Requested refresh for: %s\n", data->mapname);
 
     sdap_autofs_invalidate_maps(id_ctx, data->mapname);
 
     subreq = sdap_autofs_get_map_send(mem_ctx, id_ctx, data->mapname);
     if (subreq == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Unable to send request for %s.\n",
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Unable to send request for %s.\n",
               data->mapname);
         ret = ENOMEM;
         goto immediately;
@@ -405,13 +405,13 @@ sdap_autofs_get_entry_handler_send(TALLOC_CTX *mem_ctx,
         return NULL;
     }
 
-    DEBUG(SSSDBG_FUNC_DATA, "Requested refresh for: %s:%s\n",
+    BE_REQ_DEBUG(SSSDBG_FUNC_DATA, req, "Requested refresh for: %s:%s\n",
           data->mapname, data->entryname);
 
     subreq = sdap_autofs_get_entry_send(mem_ctx, id_ctx,
                                         data->mapname, data->entryname);
     if (subreq == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Unable to send request for %s:%s.\n",
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Unable to send request for %s:%s.\n",
               data->mapname, data->entryname);
         ret = ENOMEM;
         goto immediately;

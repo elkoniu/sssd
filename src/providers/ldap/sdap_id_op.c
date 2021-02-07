@@ -422,7 +422,7 @@ struct tevent_req *sdap_id_op_connect_send(struct sdap_id_op *op,
     if (op->conn_data) {
         /* If the operation is already connected,
          * reuse existing connection regardless of its status */
-        DEBUG(SSSDBG_TRACE_ALL, "reusing operation connection\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req, "reusing operation connection\n");
         ret = EOK;
         goto done;
     }
@@ -464,23 +464,23 @@ static int sdap_id_op_connect_step(struct tevent_req *req)
     conn_data = conn_cache->cached_connection;
     if (conn_data) {
         if (conn_data->connect_req) {
-            DEBUG(SSSDBG_TRACE_ALL, "waiting for connection to complete\n");
+            BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req, "waiting for connection to complete\n");
             sdap_id_op_hook_conn_data(op, conn_data);
             goto done;
         }
 
         if (sdap_can_reuse_connection(conn_data)) {
-            DEBUG(SSSDBG_TRACE_ALL, "reusing cached connection\n");
+            BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req, "reusing cached connection\n");
             sdap_id_op_hook_conn_data(op, conn_data);
             goto done;
         }
 
-        DEBUG(SSSDBG_TRACE_ALL, "releasing expired cached connection\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req, "releasing expired cached connection\n");
         conn_cache->cached_connection = NULL;
         sdap_id_release_conn_data(conn_data);
     }
 
-    DEBUG(SSSDBG_TRACE_ALL, "beginning to connect\n");
+    BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req, "beginning to connect\n");
 
     conn_data = talloc_zero(conn_cache, struct sdap_id_conn_data);
     if (!conn_data) {

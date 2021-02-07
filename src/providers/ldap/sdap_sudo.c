@@ -49,7 +49,7 @@ sdap_sudo_handler_send(TALLOC_CTX *mem_ctx,
 
     req = tevent_req_create(mem_ctx, &state, struct sdap_sudo_handler_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -57,21 +57,21 @@ sdap_sudo_handler_send(TALLOC_CTX *mem_ctx,
 
     switch (data->type) {
     case BE_REQ_SUDO_FULL:
-        DEBUG(SSSDBG_TRACE_FUNC, "Issuing a full refresh of sudo rules\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Issuing a full refresh of sudo rules\n");
         subreq = sdap_sudo_full_refresh_send(state, sudo_ctx);
         break;
     case BE_REQ_SUDO_RULES:
-        DEBUG(SSSDBG_TRACE_FUNC, "Issuing a refresh of specific sudo rules\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Issuing a refresh of specific sudo rules\n");
         subreq = sdap_sudo_rules_refresh_send(state, sudo_ctx, data->rules);
         break;
     default:
-        DEBUG(SSSDBG_CRIT_FAILURE, "Invalid request type: %d\n", data->type);
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Invalid request type: %d\n", data->type);
         ret = EINVAL;
         goto immediately;
     }
 
     if (subreq == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Unable to send request: %d\n", data->type);
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Unable to send request: %d\n", data->type);
         ret = ENOMEM;
         goto immediately;
     }
@@ -114,7 +114,7 @@ static void sdap_sudo_handler_done(struct tevent_req *subreq)
         }
         break;
     default:
-        DEBUG(SSSDBG_CRIT_FAILURE, "Invalid request type: %d\n", state->type);
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Invalid request type: %d\n", state->type);
         dp_error = DP_ERR_FATAL;
         ret = ERR_INTERNAL;
         break;

@@ -390,7 +390,7 @@ static struct tevent_req *get_user_dn_send(TALLOC_CTX *memctx,
     ret = sss_parse_internal_fqname(state, username,
                                     &state->username, NULL);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "Cannot parse %s\n", username);
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Cannot parse %s\n", username);
         goto done;
     }
 
@@ -405,7 +405,7 @@ static struct tevent_req *get_user_dn_send(TALLOC_CTX *memctx,
                              opts->user_map[SDAP_OC_USER].name);
     talloc_zfree(clean_name);
     if (filter == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "Failed to build the base filter\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Failed to build the base filter\n");
         ret = ENOMEM;
         goto done;
     }
@@ -457,17 +457,17 @@ static void get_user_dn_done(struct tevent_req *subreq)
     ret = sdap_search_user_recv(state, subreq, NULL, &users, &count);
     talloc_zfree(subreq);
     if (ret && ret != ENOENT) {
-        DEBUG(SSSDBG_OP_FAILURE, "Failed to retrieve users\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Failed to retrieve users\n");
         tevent_req_error(req, ret);
         return;
     }
 
     if (count == 0) {
-        DEBUG(SSSDBG_OP_FAILURE, "No such user\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "No such user\n");
         tevent_req_error(req, ENOMEM);
         return;
     } else if (count > 1) {
-        DEBUG(SSSDBG_OP_FAILURE, "Multiple users matched\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Multiple users matched\n");
         tevent_req_error(req, EIO);
         return;
     }
@@ -475,7 +475,7 @@ static void get_user_dn_done(struct tevent_req *subreq)
     /* exactly one user. Get the originalDN */
     ret = sysdb_attrs_get_el_ext(users[0], SYSDB_ORIG_DN, false, &el);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "originalDN is not available for [%s].\n", state->username);
         tevent_req_error(req, ret);
         return;
@@ -487,7 +487,7 @@ static void get_user_dn_done(struct tevent_req *subreq)
         return;
     }
 
-    DEBUG(SSSDBG_TRACE_INTERNAL, "Found originalDN [%s] for [%s]\n",
+    BE_REQ_DEBUG(SSSDBG_TRACE_INTERNAL, req, "Found originalDN [%s] for [%s]\n",
           state->orig_dn, state->username);
     tevent_req_done(req);
 }
@@ -669,10 +669,10 @@ static struct tevent_req *auth_send(TALLOC_CTX *memctx,
                       state->ctx->opts, state->username, &state->dn,
                       &state->pw_expire_type, &state->pw_expire_data);
     if (ret == EAGAIN) {
-        DEBUG(SSSDBG_TRACE_FUNC,
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
               "Need to look up the DN of %s later\n", state->username);
     } else if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Cannot get user DN [%d]: %s\n", ret, sss_strerror(ret));
         goto fail;
     }
@@ -808,7 +808,7 @@ static void auth_connect_done(struct tevent_req *subreq)
 
     if (!check_encryption_used(state->sh->ldap) &&
             !dp_opt_get_bool(state->ctx->opts->basic, SDAP_DISABLE_AUTH_TLS)) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Aborting the authentication request.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Aborting the authentication request.\n");
         sss_log(SSS_LOG_CRIT, "Aborting the authentication request.\n");
         tevent_req_error(req, ERR_AUTH_FAILED);
         return;
@@ -882,7 +882,7 @@ static void auth_bind_user_done(struct tevent_req *subreq)
     ret = sdap_auth_recv(subreq, state, &ppolicy);
     talloc_zfree(subreq);
     if (ppolicy != NULL) {
-        DEBUG(SSSDBG_TRACE_ALL,"Found ppolicy data, "
+        BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req, "Found ppolicy data, "
                  "assuming LDAP password policies are active.\n");
         state->pw_expire_type = PWEXPIRE_LDAP_PASSWORD_POLICY;
         state->pw_expire_data = ppolicy;
@@ -951,7 +951,7 @@ sdap_pam_auth_handler_send(TALLOC_CTX *mem_ctx,
     req = tevent_req_create(mem_ctx, &state,
                             struct sdap_pam_auth_handler_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -1073,10 +1073,10 @@ static void sdap_pam_auth_handler_done(struct tevent_req *subreq)
 
         /* password caching failures are not fatal errors */
         if (ret != EOK) {
-            DEBUG(SSSDBG_OP_FAILURE, "Failed to cache password for %s\n",
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Failed to cache password for %s\n",
                   state->pd->user);
         } else {
-            DEBUG(SSSDBG_CONF_SETTINGS, "Password successfully cached for %s\n",
+            BE_REQ_DEBUG(SSSDBG_CONF_SETTINGS, req, "Password successfully cached for %s\n",
                   state->pd->user);
         }
     }
@@ -1131,7 +1131,7 @@ sdap_pam_change_password_send(TALLOC_CTX *mem_ctx,
     req = tevent_req_create(mem_ctx, &state,
                             struct sdap_pam_change_password_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Unable to create tevent request!\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Unable to create tevent request!\n");
         return NULL;
     }
 
@@ -1160,7 +1160,7 @@ sdap_pam_change_password_send(TALLOC_CTX *mem_ctx,
                                          user_dn, new_password);
         break;
     default:
-        DEBUG(SSSDBG_FATAL_FAILURE, "Unrecognized pwmodify mode: %d\n",
+        BE_REQ_DEBUG(SSSDBG_FATAL_FAILURE, req, "Unrecognized pwmodify mode: %d\n",
               opts->pwmodify_mode);
         ret = EINVAL;
         goto done;
@@ -1202,7 +1202,7 @@ static void sdap_pam_change_password_done(struct tevent_req *subreq)
                                       &state->user_error_message);
         break;
     default:
-        DEBUG(SSSDBG_FATAL_FAILURE, "Unrecognized pwmodify mode: %d\n",
+        BE_REQ_DEBUG(SSSDBG_FATAL_FAILURE, req, "Unrecognized pwmodify mode: %d\n",
               state->mode);
         ret = EINVAL;
     }
@@ -1259,7 +1259,7 @@ sdap_pam_chpass_handler_send(TALLOC_CTX *mem_ctx,
     req = tevent_req_create(mem_ctx, &state,
                             struct sdap_pam_chpass_handler_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -1275,19 +1275,19 @@ sdap_pam_chpass_handler_send(TALLOC_CTX *mem_ctx,
 
     if ((pd->priv == 1) && (pd->cmd == SSS_PAM_CHAUTHTOK_PRELIM) &&
         (sss_authtok_get_type(pd->authtok) != SSS_AUTHTOK_TYPE_PASSWORD)) {
-        DEBUG(SSSDBG_CONF_SETTINGS,
+        BE_REQ_DEBUG(SSSDBG_CONF_SETTINGS, req,
               "Password reset by root is not supported.\n");
         pd->pam_status = PAM_PERM_DENIED;
         goto immediately;
     }
 
-    DEBUG(SSSDBG_OP_FAILURE,
+    BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
           "starting password change request for user [%s].\n", pd->user);
 
     pd->pam_status = PAM_SYSTEM_ERR;
 
     if (pd->cmd != SSS_PAM_CHAUTHTOK && pd->cmd != SSS_PAM_CHAUTHTOK_PRELIM) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "chpass target was called by wrong pam command.\n");
         goto immediately;
     }
@@ -1330,7 +1330,7 @@ static void sdap_pam_chpass_handler_auth_done(struct tevent_req *subreq)
 
     if ((ret == EOK || ret == ERR_PASSWORD_EXPIRED) &&
         state->pd->cmd == SSS_PAM_CHAUTHTOK_PRELIM) {
-        DEBUG(SSSDBG_TRACE_ALL, "Initial authentication for change "
+        BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req, "Initial authentication for change "
               "password operation successful.\n");
         state->pd->pam_status = PAM_SUCCESS;
         goto done;
@@ -1346,7 +1346,7 @@ static void sdap_pam_chpass_handler_auth_done(struct tevent_req *subreq)
                               state->be_ctx->domain->pwd_expiration_warning);
 
             if (ret == ERR_PASSWORD_EXPIRED) {
-                DEBUG(SSSDBG_CRIT_FAILURE, "LDAP provider cannot change "
+                BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "LDAP provider cannot change "
                       "kerberos passwords.\n");
                 state->pd->pam_status = PAM_SYSTEM_ERR;
                 goto done;
@@ -1356,7 +1356,7 @@ static void sdap_pam_chpass_handler_auth_done(struct tevent_req *subreq)
         case PWEXPIRE_NONE:
             break;
         default:
-            DEBUG(SSSDBG_CRIT_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
                   "Unknown password expiration type %d.\n", pw_expire_type);
             state->pd->pam_status = PAM_SYSTEM_ERR;
             goto done;
@@ -1366,11 +1366,11 @@ static void sdap_pam_chpass_handler_auth_done(struct tevent_req *subreq)
     switch (ret) {
         case EOK:
         case ERR_PASSWORD_EXPIRED:
-            DEBUG(SSSDBG_TRACE_LIBS,
+            BE_REQ_DEBUG(SSSDBG_TRACE_LIBS, req,
                   "user [%s] successfully authenticated.\n", state->dn);
             if (pw_expire_type == PWEXPIRE_SHADOW) {
                 /* TODO: implement async ldap modify request */
-                DEBUG(SSSDBG_CRIT_FAILURE,
+                BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
                       "Changing shadow password attributes not implemented.\n");
                 state->pd->pam_status = PAM_MODULE_UNKNOWN;
                 goto done;
@@ -1381,7 +1381,7 @@ static void sdap_pam_chpass_handler_auth_done(struct tevent_req *subreq)
                                                        state->pd,
                                                        state->dn);
                 if (subreq == NULL) {
-                    DEBUG(SSSDBG_OP_FAILURE, "Failed to change password for "
+                    BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Failed to change password for "
                           "%s\n", state->pd->user);
                     state->pd->pam_status = PAM_SYSTEM_ERR;
                     goto done;
@@ -1399,13 +1399,13 @@ static void sdap_pam_chpass_handler_auth_done(struct tevent_req *subreq)
             ret = pack_user_info_chpass_error(state->pd, "Old password not "
                                               "accepted.", &msg_len, &msg);
             if (ret != EOK) {
-                DEBUG(SSSDBG_CRIT_FAILURE,
+                BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
                       "pack_user_info_chpass_error failed.\n");
             } else {
                 ret = pam_add_response(state->pd, SSS_PAM_USER_INFO,
                                        msg_len, msg);
                 if (ret != EOK) {
-                   DEBUG(SSSDBG_CRIT_FAILURE, "pam_add_response failed.\n");
+                   BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "pam_add_response failed.\n");
                 }
             }
             break;
@@ -1459,11 +1459,11 @@ static void sdap_pam_chpass_handler_chpass_done(struct tevent_req *subreq)
         ret = pack_user_info_chpass_error(state->pd, user_error_message,
                                           &msg_len, &msg);
         if (ret != EOK) {
-            DEBUG(SSSDBG_CRIT_FAILURE, "pack_user_info_chpass_error failed.\n");
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "pack_user_info_chpass_error failed.\n");
         } else {
             ret = pam_add_response(state->pd, SSS_PAM_USER_INFO, msg_len, msg);
             if (ret != EOK) {
-                DEBUG(SSSDBG_CRIT_FAILURE, "pam_add_response failed.\n");
+                BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "pam_add_response failed.\n");
             }
         }
     }

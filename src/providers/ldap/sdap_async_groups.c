@@ -1277,7 +1277,7 @@ sdap_process_group_send(TALLOC_CTX *memctx,
 
     /* Group without members */
     if (el->num_values == 0) {
-        DEBUG(SSSDBG_FUNC_DATA, "No Members. Done!\n");
+        BE_REQ_DEBUG(SSSDBG_FUNC_DATA, req, "No Members. Done!\n");
         ret = EOK;
         goto done;
     }
@@ -1327,7 +1327,7 @@ sdap_process_group_send(TALLOC_CTX *memctx,
             break;
 
         default:
-            DEBUG(SSSDBG_CRIT_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
                   "Unknown schema type %d\n", opts->schema_type);
             ret = EINVAL;
             break;
@@ -1337,7 +1337,7 @@ done:
     /* We managed to process all the entries */
     /* EBUSY means we need to wait for entries in LDAP */
     if (ret == EOK) {
-        DEBUG(SSSDBG_TRACE_LIBS, "All group members processed\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_LIBS, req, "All group members processed\n");
         tevent_req_done(req);
         tevent_req_post(req, ev);
     }
@@ -1653,7 +1653,7 @@ static void sdap_process_group_members(struct tevent_req *subreq)
     char *name_string;
 
     state->check_count--;
-    DEBUG(SSSDBG_TRACE_ALL, "Members remaining: %zu\n", state->check_count);
+    BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req, "Members remaining: %zu\n", state->check_count);
 
     ret = sdap_get_generic_recv(subreq, state, &count, &usr_attrs);
     talloc_zfree(subreq);
@@ -1662,7 +1662,7 @@ static void sdap_process_group_members(struct tevent_req *subreq)
     }
     if (count != 1) {
         ret = EINVAL;
-        DEBUG(SSSDBG_TRACE_LIBS,
+        BE_REQ_DEBUG(SSSDBG_TRACE_LIBS, req,
               "Expected one user entry and got %zu\n", count);
         goto next;
     }
@@ -1672,7 +1672,7 @@ static void sdap_process_group_members(struct tevent_req *subreq)
         ret = EINVAL;
     }
     if (ret) {
-        DEBUG(SSSDBG_OP_FAILURE, "Failed to get the member's name\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Failed to get the member's name\n");
         goto next;
     }
 
@@ -1692,7 +1692,7 @@ static void sdap_process_group_members(struct tevent_req *subreq)
 
 next:
     if (ret) {
-        DEBUG(SSSDBG_TRACE_FUNC,
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
               "Error reading group member[%d]: %s. Skipping\n",
                ret, strerror(ret));
         state->count--;
@@ -1707,7 +1707,7 @@ next:
                         state->opts->group_map[SDAP_AT_GROUP_MEMBER].sys_name,
                         &el);
         if (ret != EOK) {
-            DEBUG(SSSDBG_CRIT_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
                   "Failed to get the group member attribute [%d]: %s\n",
                   ret, strerror(ret));
             tevent_req_error(req, ret);
@@ -1723,7 +1723,7 @@ next:
         }
         el->values = talloc_steal(state->group, state->ghost_dns->values);
         el->num_values = state->ghost_dns->num_values;
-        DEBUG(SSSDBG_TRACE_ALL, "Processed Group - Done\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req, "Processed Group - Done\n");
         tevent_req_done(req);
     }
 }
@@ -1811,7 +1811,7 @@ struct tevent_req *sdap_get_groups_send(TALLOC_CTX *memctx,
     state->search_bases = sdom->group_search_bases;
 
     if (!state->search_bases) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "Group lookup request without a search base\n");
         ret = EINVAL;
         goto done;
@@ -1824,7 +1824,7 @@ struct tevent_req *sdap_get_groups_send(TALLOC_CTX *memctx,
     if (ldap_conn != NULL) {
         state->op = sdap_id_op_create(state, ldap_conn->conn_cache);
         if (!state->op) {
-            DEBUG(SSSDBG_OP_FAILURE, "sdap_id_op_create failed\n");
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_id_op_create failed\n");
             ret = ENOMEM;
             goto done;
         }
@@ -1896,7 +1896,7 @@ static errno_t sdap_get_groups_next_base(struct tevent_req *req)
         return ENOMEM;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC,
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
           "Searching for groups with base [%s]\n",
            state->search_bases[state->base_iter]->basedn);
 
@@ -1958,7 +1958,7 @@ static void sdap_get_groups_process(struct tevent_req *subreq)
         return;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC,
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
           "Search for groups, returned %zu results.\n", count);
 
     if (state->lookup_type == SDAP_LOOKUP_WILDCARD || \
@@ -2009,7 +2009,7 @@ static void sdap_get_groups_process(struct tevent_req *subreq)
                                 state->opts->group_map[SDAP_AT_GROUP_NAME].name,
                                 &sysdb_groupnamelist);
         if (ret != EOK) {
-            DEBUG(SSSDBG_OP_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
                   "sysdb_attrs_primary_name_list failed.\n");
             tevent_req_error(req, ret);
             return;
@@ -2019,7 +2019,7 @@ static void sdap_get_groups_process(struct tevent_req *subreq)
                                          sysdb_groupnamelist, state->groups,
                                          state->count);
         if (ret == EOK) {
-            DEBUG(SSSDBG_TRACE_LIBS,
+            BE_REQ_DEBUG(SSSDBG_TRACE_LIBS, req,
                   "Writing only group data without members was successful.\n");
             tevent_req_done(req);
         } else {
@@ -2059,7 +2059,7 @@ static void sdap_get_groups_process(struct tevent_req *subreq)
 
     ret = sysdb_transaction_start(state->sysdb);
     if (ret != EOK) {
-        DEBUG(SSSDBG_FATAL_FAILURE, "Failed to start transaction\n");
+        BE_REQ_DEBUG(SSSDBG_FATAL_FAILURE, req, "Failed to start transaction\n");
         tevent_req_error(req, ret);
         return;
     }
@@ -2068,13 +2068,13 @@ static void sdap_get_groups_process(struct tevent_req *subreq)
                 || state->lookup_type == SDAP_LOOKUP_WILDCARD)
             && state->opts->schema_type != SDAP_SCHEMA_RFC2307
             && dp_opt_get_int(state->opts->basic, SDAP_NESTING_LEVEL) != 0) {
-        DEBUG(SSSDBG_TRACE_ALL, "Saving groups without members first "
+        BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req, "Saving groups without members first "
                   "to allow unrolling of nested groups.\n");
         ret = sdap_save_groups(state, state->sysdb, state->dom, state->opts,
                                state->groups, state->count, false,
                                NULL, true, NULL);
         if (ret) {
-            DEBUG(SSSDBG_OP_FAILURE, "Failed to store groups.\n");
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Failed to store groups.\n");
             tevent_req_error(req, ret);
             return;
         }
@@ -2129,18 +2129,18 @@ static void sdap_get_groups_done(struct tevent_req *subreq)
     if (ret) {
         sysret = sysdb_transaction_cancel(state->sysdb);
         if (sysret != EOK) {
-            DEBUG(SSSDBG_FATAL_FAILURE, "Could not cancel sysdb transaction\n");
+            BE_REQ_DEBUG(SSSDBG_FATAL_FAILURE, req, "Could not cancel sysdb transaction\n");
         }
         tevent_req_error(req, ret);
         return;
     }
 
     state->check_count--;
-    DEBUG(SSSDBG_TRACE_ALL, "Groups remaining: %zu\n", state->check_count);
+    BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req, "Groups remaining: %zu\n", state->check_count);
 
 
     if (state->check_count == 0) {
-        DEBUG(SSSDBG_TRACE_ALL, "All groups processed\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req, "All groups processed\n");
 
         /* If ignore_group_members is set for the domain, don't update
          * group memberships in the cache.
@@ -2154,14 +2154,14 @@ static void sdap_get_groups_done(struct tevent_req *subreq)
                                state->lookup_type == SDAP_LOOKUP_SINGLE,
                                &state->higher_usn);
         if (ret) {
-            DEBUG(SSSDBG_OP_FAILURE, "Failed to store groups.\n");
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Failed to store groups.\n");
             tevent_req_error(req, ret);
             return;
         }
-        DEBUG(SSSDBG_TRACE_ALL, "Saving %zu Groups - Done\n", state->count);
+        BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req, "Saving %zu Groups - Done\n", state->count);
         sysret = sysdb_transaction_commit(state->sysdb);
         if (sysret != EOK) {
-            DEBUG(SSSDBG_FATAL_FAILURE, "Couldn't commit transaction\n");
+            BE_REQ_DEBUG(SSSDBG_FATAL_FAILURE, req, "Couldn't commit transaction\n");
             tevent_req_error(req, sysret);
         } else {
             tevent_req_done(req);
@@ -2214,7 +2214,7 @@ static void sdap_nested_done(struct tevent_req *subreq)
                                  &state->missing_external);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Nested group processing failed: [%d][%s]\n",
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Nested group processing failed: [%d][%s]\n",
                   ret, strerror(ret));
         goto fail;
     }
@@ -2224,7 +2224,7 @@ static void sdap_nested_done(struct tevent_req *subreq)
      */
     ret = sysdb_transaction_start(state->sysdb);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Failed to start transaction\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Failed to start transaction\n");
         goto fail;
     }
     in_transaction = true;
@@ -2249,14 +2249,14 @@ static void sdap_nested_done(struct tevent_req *subreq)
 
     ret = sysdb_transaction_commit(state->sysdb);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Failed to commit transaction\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Failed to commit transaction\n");
         goto fail;
     }
     in_transaction = false;
 
     if (hash_count(state->missing_external) == 0) {
         /* No external members. Processing complete */
-        DEBUG(SSSDBG_TRACE_INTERNAL, "No external members, done\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_INTERNAL, req, "No external members, done\n");
         tevent_req_done(req);
         return;
     }
@@ -2279,7 +2279,7 @@ fail:
     if (in_transaction) {
         tret = sysdb_transaction_cancel(state->sysdb);
         if (tret != EOK) {
-            DEBUG(SSSDBG_CRIT_FAILURE, "Failed to cancel transaction\n");
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Failed to cancel transaction\n");
         }
     }
     tevent_req_error(req, ret);
@@ -2296,7 +2296,7 @@ static void sdap_nested_ext_done(struct tevent_req *subreq)
     ret = sdap_nested_group_lookup_external_recv(state, subreq);
     talloc_free(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Cannot resolve external members [%d]: %s\n",
               ret, sss_strerror(ret));
         tevent_req_error(req, ret);

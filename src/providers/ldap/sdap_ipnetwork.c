@@ -81,7 +81,7 @@ sdap_ipnetwork_get_send(TALLOC_CTX *mem_ctx,
 
     state->op = sdap_id_op_create(state, state->conn->conn_cache);
     if (state->op == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_id_op_create failed\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_id_op_create failed\n");
         ret = ENOMEM;
         goto fail;
     }
@@ -108,7 +108,7 @@ sdap_ipnetwork_get_send(TALLOC_CTX *mem_ctx,
                         attr_name, clean_filter_value);
     talloc_zfree(clean_filter_value);
     if (state->filter == NULL) {
-        DEBUG(SSSDBG_MINOR_FAILURE, "Failed to build the base filter\n");
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "Failed to build the base filter\n");
         ret = ENOMEM;
         goto fail;
     }

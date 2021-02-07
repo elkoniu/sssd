@@ -76,7 +76,7 @@ struct tevent_req *sdap_connect_send(TALLOC_CTX *memctx,
     if (!req) return NULL;
 
     if (uri == NULL || sockaddr == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Invalid uri or sockaddr\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Invalid uri or sockaddr\n");
         ret = EINVAL;
         goto fail;
     }
@@ -113,7 +113,7 @@ struct tevent_req *sdap_connect_send(TALLOC_CTX *memctx,
                                 timeout);
     if (subreq == NULL) {
         ret = ENOMEM;
-        DEBUG(SSSDBG_CRIT_FAILURE, "sss_ldap_init_send failed.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "sss_ldap_init_send failed.\n");
         goto fail;
     }
 
@@ -154,7 +154,7 @@ static void sdap_sys_connect_done(struct tevent_req *subreq)
     ret = sss_ldap_init_recv(subreq, &state->sh->ldap, &sd);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "sdap_async_connect_call request failed: [%d]: %s.\n",
               ret, sss_strerror(ret));
         tevent_req_error(req, ret);
@@ -163,7 +163,7 @@ static void sdap_sys_connect_done(struct tevent_req *subreq)
 
     ret = setup_ldap_connection_callbacks(state->sh, state->ev);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "setup_ldap_connection_callbacks failed: [%d]: %s.\n",
               ret, sss_strerror(ret));
         goto fail;
@@ -175,7 +175,7 @@ static void sdap_sys_connect_done(struct tevent_req *subreq)
     if (sd != -1) {
         ret = sdap_call_conn_cb(state->uri, sd, state->sh);
         if (ret != EOK) {
-            DEBUG(SSSDBG_CRIT_FAILURE, "sdap_call_conn_cb failed.\n");
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "sdap_call_conn_cb failed.\n");
             goto fail;
         }
     }
@@ -184,7 +184,7 @@ static void sdap_sys_connect_done(struct tevent_req *subreq)
     ver = LDAP_VERSION3;
     lret = ldap_set_option(state->sh->ldap, LDAP_OPT_PROTOCOL_VERSION, &ver);
     if (lret != LDAP_OPT_SUCCESS) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Failed to set ldap version to 3\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Failed to set ldap version to 3\n");
         goto fail;
     }
 
@@ -192,7 +192,7 @@ static void sdap_sys_connect_done(struct tevent_req *subreq)
      * to handle EINTR during poll(). */
     ret = ldap_set_option(state->sh->ldap, LDAP_OPT_RESTART, LDAP_OPT_ON);
     if (ret != LDAP_OPT_SUCCESS) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Failed to set restart option.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Failed to set restart option.\n");
     }
 
     /* Set Network Timeout */
@@ -200,7 +200,7 @@ static void sdap_sys_connect_done(struct tevent_req *subreq)
     tv.tv_usec = 0;
     lret = ldap_set_option(state->sh->ldap, LDAP_OPT_NETWORK_TIMEOUT, &tv);
     if (lret != LDAP_OPT_SUCCESS) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Failed to set network timeout to %d\n",
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Failed to set network timeout to %d\n",
                   dp_opt_get_int(state->opts->basic, SDAP_NETWORK_TIMEOUT));
         goto fail;
     }
@@ -210,7 +210,7 @@ static void sdap_sys_connect_done(struct tevent_req *subreq)
     tv.tv_usec = 0;
     lret = ldap_set_option(state->sh->ldap, LDAP_OPT_TIMEOUT, &tv);
     if (lret != LDAP_OPT_SUCCESS) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Failed to set default timeout to %d\n",
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Failed to set default timeout to %d\n",
                   dp_opt_get_int(state->opts->basic, SDAP_OPT_TIMEOUT));
         goto fail;
     }
@@ -220,7 +220,7 @@ static void sdap_sys_connect_done(struct tevent_req *subreq)
     lret = ldap_set_option(state->sh->ldap, LDAP_OPT_REFERRALS,
                            (ldap_referrals ? LDAP_OPT_ON : LDAP_OPT_OFF));
     if (lret != LDAP_OPT_SUCCESS) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Failed to set referral chasing to %s\n",
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Failed to set referral chasing to %s\n",
                   (ldap_referrals ? "LDAP_OPT_ON" : "LDAP_OPT_OFF"));
         goto fail;
     }
@@ -229,7 +229,7 @@ static void sdap_sys_connect_done(struct tevent_req *subreq)
         rebind_proc_params = talloc_zero(state->sh,
                                          struct sdap_rebind_proc_params);
         if (rebind_proc_params == NULL) {
-            DEBUG(SSSDBG_CRIT_FAILURE, "talloc_zero failed.\n");
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "talloc_zero failed.\n");
             ret = ENOMEM;
             goto fail;
         }
@@ -241,7 +241,7 @@ static void sdap_sys_connect_done(struct tevent_req *subreq)
         lret = ldap_set_rebind_proc(state->sh->ldap, sdap_rebind_proc,
                                     rebind_proc_params);
         if (lret != LDAP_SUCCESS) {
-            DEBUG(SSSDBG_CRIT_FAILURE, "ldap_set_rebind_proc failed.\n");
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "ldap_set_rebind_proc failed.\n");
             goto fail;
         }
     }
@@ -251,13 +251,13 @@ static void sdap_sys_connect_done(struct tevent_req *subreq)
     if (ldap_deref != NULL) {
         ret = deref_string_to_val(ldap_deref, &ldap_deref_val);
         if (ret != EOK) {
-            DEBUG(SSSDBG_CRIT_FAILURE, "deref_string_to_val failed.\n");
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "deref_string_to_val failed.\n");
             goto fail;
         }
 
         lret = ldap_set_option(state->sh->ldap, LDAP_OPT_DEREF, &ldap_deref_val);
         if (lret != LDAP_OPT_SUCCESS) {
-            DEBUG(SSSDBG_CRIT_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
                   "Failed to set deref option to %d\n", ldap_deref_val);
             goto fail;
         }
@@ -270,7 +270,7 @@ static void sdap_sys_connect_done(struct tevent_req *subreq)
                            sasl_nocanon ? LDAP_OPT_ON : LDAP_OPT_OFF);
     if (lret != LDAP_OPT_SUCCESS) {
         /* Do not fail, just warn into both debug logs and syslog */
-        DEBUG(SSSDBG_MINOR_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
               "Failed to set LDAP SASL nocanon option to %s. If your system "
                "is configured to use SASL, LDAP operations might fail.\n",
               sasl_nocanon ? "true" : "false");
@@ -288,7 +288,7 @@ static void sdap_sys_connect_done(struct tevent_req *subreq)
             lret = ldap_set_option(state->sh->ldap, LDAP_OPT_X_SASL_SSF_MIN,
                                    &ber_sasl_minssf);
             if (lret != LDAP_OPT_SUCCESS) {
-                DEBUG(SSSDBG_CRIT_FAILURE, "Failed to set LDAP MIN SSF option "
+                BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Failed to set LDAP MIN SSF option "
                                             "to %d\n", sasl_minssf);
                 goto fail;
             }
@@ -300,7 +300,7 @@ static void sdap_sys_connect_done(struct tevent_req *subreq)
             lret = ldap_set_option(state->sh->ldap, LDAP_OPT_X_SASL_SSF_MAX,
                                    &ber_sasl_maxssf);
             if (lret != LDAP_OPT_SUCCESS) {
-                DEBUG(SSSDBG_CRIT_FAILURE, "Failed to set LDAP MAX SSF option "
+                BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Failed to set LDAP MAX SSF option "
                                             "to %d\n", sasl_maxssf);
                 goto fail;
             }
@@ -314,20 +314,20 @@ static void sdap_sys_connect_done(struct tevent_req *subreq)
         return;
     }
 
-    DEBUG(SSSDBG_CONF_SETTINGS, "Executing START TLS\n");
+    BE_REQ_DEBUG(SSSDBG_CONF_SETTINGS, req, "Executing START TLS\n");
 
     lret = ldap_start_tls(state->sh->ldap, NULL, NULL, &msgid);
     if (lret != LDAP_SUCCESS) {
         optret = sss_ldap_get_diagnostic_msg(state, state->sh->ldap,
                                              &errmsg);
         if (optret == LDAP_SUCCESS) {
-            DEBUG(SSSDBG_MINOR_FAILURE, "ldap_start_tls failed: [%s] [%s]\n",
+            BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "ldap_start_tls failed: [%s] [%s]\n",
                       sss_ldap_err2string(lret),
                       errmsg);
             sss_log(SSS_LOG_ERR, "Could not start TLS. %s", errmsg);
         }
         else {
-            DEBUG(SSSDBG_MINOR_FAILURE, "ldap_start_tls failed: [%s]\n",
+            BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "ldap_start_tls failed: [%s]\n",
                       sss_ldap_err2string(lret));
             sss_log(SSS_LOG_ERR, "Could not start TLS. "
                                  "Check for certificate issues.");
@@ -343,7 +343,7 @@ static void sdap_sys_connect_done(struct tevent_req *subreq)
                       dp_opt_get_int(state->opts->basic, SDAP_OPT_TIMEOUT),
                       &state->op);
     if (ret) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Failed to set up operation!\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Failed to set up operation!\n");
         goto fail;
     }
 
@@ -384,18 +384,18 @@ static void sdap_connect_done(struct sdap_op *op,
     ret = ldap_parse_result(state->sh->ldap, state->reply->msg,
                             &state->result, NULL, &errmsg, NULL, NULL, 0);
     if (ret != LDAP_SUCCESS) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "ldap_parse_result failed (%d)\n", state->op->msgid);
         tevent_req_error(req, EIO);
         return;
     }
 
-    DEBUG(SSSDBG_MINOR_FAILURE, "START TLS result: %s(%d), %s\n",
+    BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "START TLS result: %s(%d), %s\n",
               sss_ldap_err2string(state->result), state->result, errmsg);
     ldap_memfree(errmsg);
 
     if (ldap_tls_inplace(state->sh->ldap)) {
-        DEBUG(SSSDBG_TRACE_ALL, "SSL/TLS handler already in place.\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req, "SSL/TLS handler already in place.\n");
         tevent_req_done(req);
         return;
     }
@@ -407,13 +407,13 @@ static void sdap_connect_done(struct sdap_op *op,
         optret = sss_ldap_get_diagnostic_msg(state, state->sh->ldap,
                                              &tlserr);
         if (optret == LDAP_SUCCESS) {
-            DEBUG(SSSDBG_MINOR_FAILURE, "ldap_install_tls failed: [%s] [%s]\n",
+            BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "ldap_install_tls failed: [%s] [%s]\n",
                       sss_ldap_err2string(ret),
                       tlserr);
             sss_log(SSS_LOG_ERR, "Could not start TLS encryption. %s", tlserr);
         }
         else {
-            DEBUG(SSSDBG_MINOR_FAILURE, "ldap_install_tls failed: [%s]\n",
+            BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "ldap_install_tls failed: [%s]\n",
                       sss_ldap_err2string(ret));
             sss_log(SSS_LOG_ERR, "Could not start TLS encryption. "
                                  "Check for certificate issues.");
@@ -504,7 +504,7 @@ struct tevent_req *sdap_connect_host_send(TALLOC_CTX *mem_ctx,
         goto immediately;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "Resolving host %s\n", host);
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Resolving host %s\n", host);
 
     subreq = resolv_gethostbyname_send(state, state->ev, resolv_ctx,
                                        host, family_order, host_db);
@@ -543,19 +543,19 @@ static void sdap_connect_host_resolv_done(struct tevent_req *subreq)
     ret = resolv_gethostbyname_recv(subreq, state, &status, NULL, &hostent);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "Failed to resolve host %s: %s\n",
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Failed to resolve host %s: %s\n",
                                   state->host, resolv_strerror(status));
         goto done;
     }
 
     sockaddr = resolv_get_sockaddr_address(state, hostent, state->port);
     if (sockaddr == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "resolv_get_sockaddr_address() failed\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "resolv_get_sockaddr_address() failed\n");
         ret = EIO;
         goto done;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "Connecting to %s\n", state->uri);
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Connecting to %s\n", state->uri);
 
     subreq = sdap_connect_send(state, state->ev, state->opts,
                                state->uri, sockaddr, state->use_start_tls);
@@ -598,12 +598,12 @@ static void sdap_connect_host_done(struct tevent_req *subreq)
         /* we need to mark handle as connected to allow anonymous bind */
         ret = sdap_set_connected(state->sh, state->ev);
         if (ret != EOK) {
-            DEBUG(SSSDBG_CRIT_FAILURE, "sdap_set_connected() failed\n");
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "sdap_set_connected() failed\n");
             goto done;
         }
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "Successful connection to %s\n", state->uri);
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Successful connection to %s\n", state->uri);
 
 done:
     if (ret != EOK) {
@@ -677,13 +677,13 @@ static struct tevent_req *simple_bind_send(TALLOC_CTX *memctx,
     ret = sss_ldap_control_create(LDAP_CONTROL_PASSWORDPOLICYREQUEST,
                                   0, NULL, 0, &ctrls[0]);
     if (ret != LDAP_SUCCESS && ret != LDAP_NOT_SUPPORTED) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "sss_ldap_control_create failed to create "
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "sss_ldap_control_create failed to create "
                   "Password Policy control.\n");
         goto fail;
     }
     request_controls = ctrls;
 
-    DEBUG(SSSDBG_CONF_SETTINGS,
+    BE_REQ_DEBUG(SSSDBG_CONF_SETTINGS, req,
           "Executing simple bind as: %s\n", state->user_dn);
 
     ret = ldap_sasl_bind(state->sh->ldap, state->user_dn, LDAP_SASL_SIMPLE,
@@ -693,17 +693,17 @@ static struct tevent_req *simple_bind_send(TALLOC_CTX *memctx,
         ret = ldap_get_option(state->sh->ldap,
                               LDAP_OPT_RESULT_CODE, &ldap_err);
         if (ret != LDAP_OPT_SUCCESS) {
-            DEBUG(SSSDBG_CRIT_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
                   "ldap_sasl_bind failed (couldn't get ldap error)\n");
             ret = LDAP_LOCAL_ERROR;
         } else {
-            DEBUG(SSSDBG_CRIT_FAILURE, "ldap_sasl_bind failed (%d)[%s]\n",
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "ldap_sasl_bind failed (%d)[%s]\n",
                       ldap_err, sss_ldap_err2string(ldap_err));
             ret = ldap_err;
         }
         goto fail;
     }
-    DEBUG(SSSDBG_TRACE_INTERNAL, "ldap simple bind sent, msgid = %d\n", msgid);
+    BE_REQ_DEBUG(SSSDBG_TRACE_INTERNAL, req, "ldap simple bind sent, msgid = %d\n", msgid);
 
     if (!sh->connected) {
         ret = sdap_set_connected(sh, ev);
@@ -713,7 +713,7 @@ static struct tevent_req *simple_bind_send(TALLOC_CTX *memctx,
     ret = sdap_op_add(state, ev, sh, msgid,
                       simple_bind_done, req, timeout, &state->op);
     if (ret) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Failed to set up operation!\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Failed to set up operation!\n");
         goto fail;
     }
 
@@ -759,7 +759,7 @@ static void simple_bind_done(struct sdap_op *op,
                             &result, NULL, &errmsg, NULL,
                             &response_controls, 0);
     if (lret != LDAP_SUCCESS) {
-        DEBUG(SSSDBG_MINOR_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
               "ldap_parse_result failed (%d)\n", state->op->msgid);
         ret = ERR_INTERNAL;
         goto done;
@@ -778,11 +778,11 @@ static void simple_bind_done(struct sdap_op *op,
     }
 
     if (response_controls == NULL) {
-        DEBUG(SSSDBG_TRACE_LIBS, "Server returned no controls.\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_LIBS, req, "Server returned no controls.\n");
         state->ppolicy = NULL;
     } else {
         for (c = 0; response_controls[c] != NULL; c++) {
-            DEBUG(SSSDBG_TRACE_INTERNAL,
+            BE_REQ_DEBUG(SSSDBG_TRACE_INTERNAL, req,
                   "Server returned control [%s].\n",
                    response_controls[c]->ldctl_oid);
 
@@ -799,7 +799,7 @@ static void simple_bind_done(struct sdap_op *op,
                     goto done;
                 }
 
-                DEBUG(SSSDBG_TRACE_LIBS,
+                BE_REQ_DEBUG(SSSDBG_TRACE_LIBS, req,
                       "Password Policy Response: expire [%d] grace [%d] "
                           "error [%s].\n", pp_expire, pp_grace,
                           ldap_passwordpolicy_err2txt(pp_error));
@@ -827,30 +827,30 @@ static void simple_bind_done(struct sdap_op *op,
                      */
                     on_grace_login_limit = false;
                     if (pp_error == PP_changeAfterReset) {
-                        DEBUG(SSSDBG_TRACE_LIBS,
+                        BE_REQ_DEBUG(SSSDBG_TRACE_LIBS, req,
                               "Password was reset. "
                                "User must set a new password.\n");
                         ret = ERR_PASSWORD_EXPIRED;
                     } else if (pp_grace >= 0) {
                         on_grace_login_limit = true;
-                        DEBUG(SSSDBG_TRACE_LIBS,
+                        BE_REQ_DEBUG(SSSDBG_TRACE_LIBS, req,
                               "Password expired. "
                                "[%d] grace logins remaining.\n",
                                pp_grace);
                     } else if (pp_expire > 0) {
-                        DEBUG(SSSDBG_TRACE_LIBS,
+                        BE_REQ_DEBUG(SSSDBG_TRACE_LIBS, req,
                               "Password will expire in [%d] seconds.\n",
                                pp_expire);
                     }
                 } else if (result == LDAP_INVALID_CREDENTIALS &&
                            pp_error == PP_passwordExpired) {
-                    DEBUG(SSSDBG_TRACE_LIBS,
+                    BE_REQ_DEBUG(SSSDBG_TRACE_LIBS, req,
                           "Password expired user must set a new password.\n");
                     ret = ERR_PASSWORD_EXPIRED;
                 }
             } else if (strcmp(response_controls[c]->ldctl_oid,
                               LDAP_CONTROL_PWEXPIRED) == 0) {
-                DEBUG(SSSDBG_TRACE_LIBS,
+                BE_REQ_DEBUG(SSSDBG_TRACE_LIBS, req,
                       "Password expired user must set a new password.\n");
                 ret = ERR_PASSWORD_EXPIRED;
             } else if (strcmp(response_controls[c]->ldctl_oid,
@@ -887,14 +887,14 @@ static void simple_bind_done(struct sdap_op *op,
                     goto done;
                 }
 
-                DEBUG(SSSDBG_TRACE_LIBS,
+                BE_REQ_DEBUG(SSSDBG_TRACE_LIBS, req,
                       "Password will expire in [%d] seconds.\n",
                        state->ppolicy->expire);
             }
         }
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "Bind result: %s(%d), %s\n",
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Bind result: %s(%d), %s\n",
               sss_ldap_err2string(result), result,
               errmsg ? errmsg : "no errmsg set");
 
@@ -969,14 +969,14 @@ static struct tevent_req *sasl_bind_send(TALLOC_CTX *memctx,
     state->sasl_user = sasl_user;
     state->sasl_cred = sasl_cred;
 
-    DEBUG(SSSDBG_CONF_SETTINGS, "Executing sasl bind mech: %s, user: %s\n",
+    BE_REQ_DEBUG(SSSDBG_CONF_SETTINGS, req, "Executing sasl bind mech: %s, user: %s\n",
               sasl_mech, sasl_user);
 
     /* FIXME: Warning, this is a sync call!
      * No async variant exist in openldap libraries yet */
 
     if (state->sh == NULL || state->sh->ldap == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "Trying LDAP search while not connected.\n");
         ret = ERR_NETWORK_IO;
         goto fail;
@@ -987,14 +987,14 @@ static struct tevent_req *sasl_bind_send(TALLOC_CTX *memctx,
                                        LDAP_SASL_QUIET,
                                        (*sdap_sasl_interact), state);
     if (ret != LDAP_SUCCESS) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "ldap_sasl_interactive_bind_s failed (%d)[%s]\n",
                ret, sss_ldap_err2string(ret));
 
         optret = sss_ldap_get_diagnostic_msg(state, state->sh->ldap,
                                              &diag_msg);
         if (optret == EOK) {
-            DEBUG(SSSDBG_MINOR_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
                   "Extended failure message: [%s]\n", diag_msg);
         }
         talloc_zfree(diag_msg);
@@ -1145,7 +1145,7 @@ struct tevent_req *sdap_kinit_send(TALLOC_CTX *memctx,
         ret = setenv("KRB5_CANONICALIZE", "false", 1);
     }
     if (ret == -1) {
-        DEBUG(SSSDBG_OP_FAILURE, "Failed to set KRB5_CANONICALIZE to %s\n",
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Failed to set KRB5_CANONICALIZE to %s\n",
                   ((canonicalize)?"true":"false"));
         talloc_free(req);
         return NULL;
@@ -1166,7 +1166,7 @@ static struct tevent_req *sdap_kinit_next_kdc(struct tevent_req *req)
     struct sdap_kinit_state *state = tevent_req_data(req,
                                                     struct sdap_kinit_state);
 
-    DEBUG(SSSDBG_TRACE_LIBS,
+    BE_REQ_DEBUG(SSSDBG_TRACE_LIBS, req,
           "Resolving next KDC for service %s\n", state->krb_service_name);
 
     next_req = be_resolve_server_send(state, state->ev,
@@ -1174,7 +1174,7 @@ static struct tevent_req *sdap_kinit_next_kdc(struct tevent_req *req)
                                       state->krb_service_name,
                                       state->kdc_srv == NULL ? true : false);
     if (next_req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "be_resolve_server_send failed.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_resolve_server_send failed.\n");
         return NULL;
     }
     tevent_req_set_callback(next_req, sdap_kinit_kdc_resolved, req);
@@ -1200,7 +1200,7 @@ static void sdap_kinit_kdc_resolved(struct tevent_req *subreq)
         return;
     }
 
-    DEBUG(SSSDBG_TRACE_LIBS, "KDC resolved, attempting to get TGT...\n");
+    BE_REQ_DEBUG(SSSDBG_TRACE_LIBS, req, "KDC resolved, attempting to get TGT...\n");
 
     tgtreq = sdap_get_tgt_send(state, state->ev, state->realm,
                                state->principal, state->keytab,
@@ -1232,7 +1232,7 @@ static void sdap_kinit_done(struct tevent_req *subreq)
     if (ret == ETIMEDOUT) {
         /* The child didn't even respond. Perhaps the KDC is too busy,
          * retry with another KDC */
-        DEBUG(SSSDBG_MINOR_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
               "Communication with KDC timed out, trying the next one\n");
         be_fo_set_port_status(state->be, state->krb_service_name,
                               state->kdc_srv, PORT_NOT_WORKING);
@@ -1243,7 +1243,7 @@ static void sdap_kinit_done(struct tevent_req *subreq)
         return;
     } else if (ret != EOK) {
         /* A severe error while executing the child. Abort the operation. */
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "child failed (%d [%s])\n", ret, strerror(ret));
         tevent_req_error(req, ret);
         return;
@@ -1252,7 +1252,7 @@ static void sdap_kinit_done(struct tevent_req *subreq)
     if (result == EOK) {
         ret = setenv("KRB5CCNAME", ccname, 1);
         if (ret == -1) {
-            DEBUG(SSSDBG_OP_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
                   "Unable to set env. variable KRB5CCNAME!\n");
             tevent_req_error(req, ERR_AUTH_FAILED);
             return;
@@ -1274,7 +1274,7 @@ static void sdap_kinit_done(struct tevent_req *subreq)
 
     }
 
-    DEBUG(SSSDBG_CONF_SETTINGS,
+    BE_REQ_DEBUG(SSSDBG_CONF_SETTINGS, req,
           "Could not get TGT: %d [%s]\n", result, sss_strerror(result));
     tevent_req_error(req, ERR_AUTH_FAILED);
 }
@@ -1346,7 +1346,7 @@ struct tevent_req *sdap_auth_send(TALLOC_CTX *memctx,
          */
         ret = sss_authtok_get_password(authtok, &password, &pwlen);
         if (ret != EOK) {
-            DEBUG(SSSDBG_CRIT_FAILURE, "Cannot parse authtok.\n");
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Cannot parse authtok.\n");
             tevent_req_error(req, ret);
             return tevent_req_post(req, ev);
         }
@@ -1697,7 +1697,7 @@ static void sdap_cli_rootdse_done(struct tevent_req *subreq)
 
     ret = sdap_cli_use_rootdse(state);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_cli_use_rootdse failed\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_cli_use_rootdse failed\n");
         tevent_req_error(req, ret);
         return;
     }
@@ -1800,7 +1800,7 @@ static void sdap_cli_kinit_done(struct tevent_req *subreq)
     if (ret != EOK) {
         /* We're not able to authenticate to the LDAP server.
          * There's not much we can do except for going offline */
-        DEBUG(SSSDBG_TRACE_FUNC,
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
               "Cannot get a TGT: ret [%d](%s)\n", ret, sss_strerror(ret));
         tevent_req_error(req, EACCES);
         return;
@@ -1831,11 +1831,11 @@ static void sdap_cli_auth_step(struct tevent_req *req)
     /* It's possible that connection was terminated by server (e.g. #2435),
        to overcome this try to connect again. */
     if (state->sh == NULL || !state->sh->connected) {
-        DEBUG(SSSDBG_TRACE_FUNC, "No connection available. "
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "No connection available. "
               "Trying to reconnect.\n");
         ret = sdap_cli_auth_reconnect(req);
         if (ret != EOK) {
-            DEBUG(SSSDBG_MINOR_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
                   "sdap_cli_auth_reconnect failed: %d:[%s]\n",
                   ret, sss_strerror(ret));
             tevent_req_error(req, ret);
@@ -1852,23 +1852,23 @@ static void sdap_cli_auth_step(struct tevent_req *req)
     if (expire_offset > 0) {
         expire_timeout += sss_rand() % (expire_offset + 1);
     } else if (expire_offset < 0) {
-        DEBUG(SSSDBG_MINOR_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
               "Negative value [%d] of ldap_connection_expire_offset "
               "is not allowed.\n",
               expire_offset);
     }
 
-    DEBUG(SSSDBG_CONF_SETTINGS, "expire timeout is %d\n", expire_timeout);
+    BE_REQ_DEBUG(SSSDBG_CONF_SETTINGS, req, "expire timeout is %d\n", expire_timeout);
     if (!state->sh->expire_time
             || (state->sh->expire_time > (now + expire_timeout))) {
         state->sh->expire_time = now + expire_timeout;
-        DEBUG(SSSDBG_TRACE_LIBS,
+        BE_REQ_DEBUG(SSSDBG_TRACE_LIBS, req,
               "the connection will expire at %ld\n", state->sh->expire_time);
     }
 
     if (!state->do_auth ||
         (sasl_mech == NULL && user_dn == NULL)) {
-        DEBUG(SSSDBG_TRACE_LIBS,
+        BE_REQ_DEBUG(SSSDBG_TRACE_LIBS, req,
               "No authentication requested or SASL auth forced off\n");
         tevent_req_done(req);
         return;
@@ -1884,7 +1884,7 @@ static void sdap_cli_auth_step(struct tevent_req *req)
 
     if (authtok_type != NULL) {
         if (strcasecmp(authtok_type, "password") != 0) {
-            DEBUG(SSSDBG_TRACE_LIBS, "Invalid authtoken type\n");
+            BE_REQ_DEBUG(SSSDBG_TRACE_LIBS, req, "Invalid authtoken type\n");
             tevent_req_error(req, EINVAL);
             return;
         }
@@ -1971,14 +1971,14 @@ static void sdap_cli_auth_reconnect_done(struct tevent_req *subreq)
         /* we need to mark handle as connected to allow anonymous bind */
         ret = sdap_set_connected(state->sh, state->ev);
         if (ret != EOK) {
-            DEBUG(SSSDBG_CRIT_FAILURE, "sdap_set_connected() failed.\n");
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "sdap_set_connected() failed.\n");
             goto done;
         }
     }
 
     /* End request if reconnecting failed to avoid endless loop */
     if (state->sh == NULL || !state->sh->connected) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Failed to reconnect.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Failed to reconnect.\n");
         ret = EIO;
         goto done;
     }
@@ -2108,7 +2108,7 @@ int sdap_cli_connect_recv(struct tevent_req *req,
         }
         return EIO;
     } else if (state->srv) {
-        DEBUG(SSSDBG_TRACE_FUNC, "Connection established.\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Connection established.\n");
 
         be_fo_set_port_status(state->be, state->service->name,
                               state->srv, PORT_WORKING);

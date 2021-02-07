@@ -77,7 +77,7 @@ sdap_dom_resolver_enum_send(TALLOC_CTX *memctx,
 
     state->iphost_op = sdap_id_op_create(state, conn->conn_cache);
     if (state->iphost_op == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "sdap_id_op_create failed for iphosts\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "sdap_id_op_create failed for iphosts\n");
         ret = EIO;
         goto fail;
     }
@@ -85,7 +85,7 @@ sdap_dom_resolver_enum_send(TALLOC_CTX *memctx,
     ret = sdap_dom_resolver_enum_retry(req, state->iphost_op,
                                        sdap_dom_resolver_enum_get_iphost);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_dom_enum_retry failed\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_dom_enum_retry failed\n");
         goto fail;
     }
 
@@ -109,7 +109,7 @@ sdap_dom_resolver_enum_retry(struct tevent_req *req,
     state = tevent_req_data(req, struct sdap_dom_resolver_enum_state);
     subreq = sdap_id_op_connect_send(op, state, &ret);
     if (subreq == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "sdap_id_op_connect_send failed: %d\n", ret);
         return ret;
     }
@@ -130,11 +130,11 @@ static bool sdap_dom_resolver_enum_connected(struct tevent_req *subreq)
 
     if (ret != EOK) {
         if (dp_error == DP_ERR_OFFLINE) {
-            DEBUG(SSSDBG_TRACE_FUNC,
+            BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
                   "Backend is marked offline, retry later!\n");
             tevent_req_done(req);
         } else {
-            DEBUG(SSSDBG_MINOR_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
                   "Domain enumeration failed to connect to " \
                    "LDAP server: (%d)[%s]\n", ret, strerror(ret));
             tevent_req_error(req, ret);
@@ -193,12 +193,12 @@ static void sdap_dom_resolver_enum_iphost_done(struct tevent_req *subreq)
         }
         return;
     } else if (dp_error == DP_ERR_OFFLINE) {
-        DEBUG(SSSDBG_TRACE_FUNC, "Backend is offline, retrying later\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Backend is offline, retrying later\n");
         tevent_req_done(req);
         return;
     } else if (ret != EOK && ret != ENOENT) {
         /* Non-recoverable error */
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "IP hosts enumeration failed: %d: %s\n", ret, sss_strerror(ret));
         tevent_req_error(req, ret);
         return;
@@ -206,7 +206,7 @@ static void sdap_dom_resolver_enum_iphost_done(struct tevent_req *subreq)
 
     state->ipnetwork_op = sdap_id_op_create(state, state->conn->conn_cache);
     if (state->ipnetwork_op == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "sdap_id_op_create failed for IP networks\n");
         tevent_req_error(req, EIO);
         return;
@@ -270,12 +270,12 @@ static void sdap_dom_resolver_enum_ipnetwork_done(struct tevent_req *subreq)
         }
         return;
     } else if (dp_error == DP_ERR_OFFLINE) {
-        DEBUG(SSSDBG_TRACE_FUNC, "Backend is offline, retrying later\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Backend is offline, retrying later\n");
         tevent_req_done(req);
         return;
     } else if (ret != EOK && ret != ENOENT) {
         /* Non-recoverable error */
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "IP networks enumeration failed: %d: %s\n",
               ret, sss_strerror(ret));
         tevent_req_error(req, ret);
@@ -290,7 +290,7 @@ static void sdap_dom_resolver_enum_ipnetwork_done(struct tevent_req *subreq)
     ret = sysdb_set_enumerated(state->sdom->dom, SYSDB_HAS_ENUMERATED_RESOLVER,
                                true);
     if (ret != EOK) {
-        DEBUG(SSSDBG_MINOR_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
               "Could not mark domain as having enumerated.\n");
         /* This error is non-fatal, so continue */
     }
@@ -301,7 +301,7 @@ static void sdap_dom_resolver_enum_ipnetwork_done(struct tevent_req *subreq)
             /* Not fatal, worst case we'll have stale entries that would be
              * removed on a subsequent online lookup
              */
-            DEBUG(SSSDBG_MINOR_FAILURE, "Cleanup failed: [%d]: %s\n",
+            BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "Cleanup failed: [%d]: %s\n",
                   ret, sss_strerror(ret));
         }
 
