@@ -32,6 +32,7 @@
 
 #include "util/util.h"
 #include "util/sss_utf8.h"
+#include "providers/data_provider/dp_private.h"
 
 int socket_activated = 0;
 int dbus_activated = 0;
@@ -1065,4 +1066,23 @@ bool is_valid_domain_name(const char *domain)
     }
 
     return true;
+}
+
+const char * find_req_name(void *mem_ctx)
+{
+    const char *name = "???";
+    void *current = mem_ctx;
+
+    while (current) {
+        /* Check if we are on right data struct already */
+        if (0 == strcmp("struct dp_req", talloc_get_name(current))) {
+            name = ((struct dp_req *)current)->name;
+            break;
+        }
+
+        /* Find out next the candidate for lookup */
+        current = talloc_parent(current);
+    }
+
+    return name;
 }
