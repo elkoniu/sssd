@@ -141,7 +141,7 @@ ad_dyndns_update_send(TALLOC_CTX *mem_ctx,
 
     if (ctx->dyndns_ctx->last_refresh + 60 > time(NULL) ||
         ctx->dyndns_ctx->timer_in_progress) {
-        DEBUG(SSSDBG_FUNC_DATA, "Last periodic update ran recently or timer "
+        BE_REQ_DEBUG(SSSDBG_FUNC_DATA, req, "Last periodic update ran recently or timer "
               "in progress, not scheduling another update\n");
         tevent_req_done(req);
         tevent_req_post(req, sdap_ctx->be->ev);
@@ -152,14 +152,14 @@ ad_dyndns_update_send(TALLOC_CTX *mem_ctx,
     /* Make sure to have a valid LDAP connection */
     state->sdap_op = sdap_id_op_create(state, sdap_ctx->conn->conn_cache);
     if (state->sdap_op == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_id_op_create failed\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_id_op_create failed\n");
         ret = ENOMEM;
         goto done;
     }
 
     subreq = sdap_id_op_connect_send(state->sdap_op, state, &ret);
     if (!subreq) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_id_op_connect_send failed: [%d](%s)\n",
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_id_op_connect_send failed: [%d](%s)\n",
               ret, sss_strerror(ret));
         ret = ENOMEM;
         goto done;
@@ -192,11 +192,11 @@ static void ad_dyndns_update_connect_done(struct tevent_req *subreq)
 
     if (ret != EOK) {
         if (dp_error == DP_ERR_OFFLINE) {
-            DEBUG(SSSDBG_MINOR_FAILURE, "No server is available, "
+            BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "No server is available, "
                   "dynamic DNS update is skipped in offline mode.\n");
             tevent_req_error(req, ERR_DYNDNS_OFFLINE);
         } else {
-            DEBUG(SSSDBG_OP_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
                   "Failed to connect to LDAP server: [%d](%s)\n",
                   ret, sss_strerror(ret));
             tevent_req_error(req, ERR_NETWORK_IO);
@@ -209,7 +209,7 @@ static void ad_dyndns_update_connect_done(struct tevent_req *subreq)
 
     ret = ldap_url_parse(ctx->service->sdap->uri, &lud);
     if (ret != LDAP_SUCCESS) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Failed to parse ldap URI '%s': %d\n",
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Failed to parse ldap URI '%s': %d\n",
               ctx->service->sdap->uri, ret);
         ret = EINVAL;
         goto done;
@@ -217,7 +217,7 @@ static void ad_dyndns_update_connect_done(struct tevent_req *subreq)
 
     if (lud->lud_scheme != NULL &&
         strcasecmp(lud->lud_scheme, "ldapi") == 0) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "The LDAP scheme is ldapi://, cannot proceed with update\n");
         ldap_free_urldesc(lud);
         ret = EINVAL;
@@ -225,7 +225,7 @@ static void ad_dyndns_update_connect_done(struct tevent_req *subreq)
     }
 
     if (lud->lud_host == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "The LDAP URI (%s) did not contain a host name\n",
               ctx->service->sdap->uri);
         ldap_free_urldesc(lud);
@@ -250,7 +250,7 @@ static void ad_dyndns_update_connect_done(struct tevent_req *subreq)
                                      false);
     if (!subreq) {
         ret = EIO;
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "sdap_dyndns_update_send failed: [%d](%s)\n",
                ret, sss_strerror(ret));
         goto done;
@@ -273,7 +273,7 @@ static void ad_dyndns_sdap_update_done(struct tevent_req *subreq)
     ret = sdap_dyndns_update_recv(subreq);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Dynamic DNS update failed [%d]: %s\n",
               ret, sss_strerror(ret));
         tevent_req_error(req, ret);

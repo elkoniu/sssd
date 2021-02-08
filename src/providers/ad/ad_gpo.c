@@ -1811,7 +1811,7 @@ ad_gpo_access_send(TALLOC_CTX *mem_ctx,
 
     req = tevent_req_create(mem_ctx, &state, struct ad_gpo_access_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -1821,7 +1821,7 @@ ad_gpo_access_send(TALLOC_CTX *mem_ctx,
 
     hret = hash_lookup(ctx->gpo_map_options_table, &key, &val);
     if (hret != HASH_SUCCESS && hret != HASH_ERROR_KEY_NOT_FOUND) {
-        DEBUG(SSSDBG_OP_FAILURE, "Error checking hash table: [%s]\n",
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Error checking hash table: [%s]\n",
               hash_error_string(hret));
         ret = EINVAL;
         goto immediately;
@@ -1829,7 +1829,7 @@ ad_gpo_access_send(TALLOC_CTX *mem_ctx,
 
     /* if service isn't mapped, map it to value of ad_gpo_default_right option */
     if (hret == HASH_ERROR_KEY_NOT_FOUND) {
-        DEBUG(SSSDBG_TRACE_FUNC,
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
               "Configuration hint: PAM service '%s' is not mapped to any Group"
               " Policy rule. If you plan to use this PAM service it is "
               "recommended to use the ad_gpo_map_* family of options to map "
@@ -1843,7 +1843,7 @@ ad_gpo_access_send(TALLOC_CTX *mem_ctx,
         gpo_map_type = (enum gpo_map_type) val.i;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "service %s maps to %s\n", service,
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "service %s maps to %s\n", service,
           gpo_map_type_string(gpo_map_type));
 
     if (gpo_map_type == GPO_MAP_PERMIT) {
@@ -1857,7 +1857,7 @@ ad_gpo_access_send(TALLOC_CTX *mem_ctx,
             ret = ERR_ACCESS_DENIED;
             goto immediately;
         case GPO_ACCESS_CONTROL_PERMISSIVE:
-            DEBUG(SSSDBG_TRACE_FUNC, "access denied: permissive mode\n");
+            BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "access denied: permissive mode\n");
             sss_log_ext(SSS_LOG_WARNING, LOG_AUTHPRIV, "Warning: user would " \
                         "have been denied GPO-based logon access if the " \
                         "ad_gpo_access_control option were set to enforcing " \
@@ -1898,7 +1898,7 @@ ad_gpo_access_send(TALLOC_CTX *mem_ctx,
     state->conn = ad_get_dom_ldap_conn(ctx->ad_id_ctx, state->host_domain);
     state->sdap_op = sdap_id_op_create(state, state->conn->conn_cache);
     if (state->sdap_op == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_id_op_create failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_id_op_create failed.\n");
         ret = ENOMEM;
         goto immediately;
     }
@@ -1906,7 +1906,7 @@ ad_gpo_access_send(TALLOC_CTX *mem_ctx,
 
     subreq = sdap_id_op_connect_send(state->sdap_op, state, &ret);
     if (subreq == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "sdap_id_op_connect_send failed: [%d](%s)\n",
                ret, sss_strerror(ret));
         goto immediately;
@@ -1982,12 +1982,12 @@ ad_gpo_connect_done(struct tevent_req *subreq)
 
     if (ret != EOK) {
         if (dp_error != DP_ERR_OFFLINE) {
-            DEBUG(SSSDBG_OP_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
                   "Failed to connect to AD server: [%d](%s)\n",
                   ret, sss_strerror(ret));
             goto done;
         } else {
-            DEBUG(SSSDBG_TRACE_FUNC, "Preparing for offline operation.\n");
+            BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Preparing for offline operation.\n");
             ret = process_offline_gpos(state,
                                        state->user,
                                        state->gpo_implicit_deny,
@@ -1997,11 +1997,11 @@ ad_gpo_connect_done(struct tevent_req *subreq)
                                        state->gpo_map_type);
 
             if (ret == EOK) {
-                DEBUG(SSSDBG_TRACE_FUNC, "process_offline_gpos succeeded\n");
+                BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "process_offline_gpos succeeded\n");
                 tevent_req_done(req);
                 goto done;
             } else {
-                DEBUG(SSSDBG_OP_FAILURE,
+                BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
                       "process_offline_gpos failed [%d](%s)\n",
                       ret, sss_strerror(ret));
                 goto done;
@@ -2013,14 +2013,14 @@ ad_gpo_connect_done(struct tevent_req *subreq)
     server_uri = state->conn->service->uri;
     ret = ldap_url_parse(server_uri, &lud);
     if (ret != LDAP_SUCCESS) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "Failed to parse ldap URI (%s)!\n", server_uri);
         ret = EINVAL;
         goto done;
     }
 
     if (lud->lud_host == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "The LDAP URI (%s) did not contain a host name\n", server_uri);
         ldap_free_urldesc(lud);
         ret = EINVAL;
@@ -2033,7 +2033,7 @@ ad_gpo_connect_done(struct tevent_req *subreq)
         ret = ENOMEM;
         goto done;
     }
-    DEBUG(SSSDBG_TRACE_ALL, "server_hostname from uri: %s\n",
+    BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req, "server_hostname from uri: %s\n",
           state->server_hostname);
 
     /* SDAP_SASL_AUTHID contains the name used for kinit and SASL bind which
@@ -2044,12 +2044,12 @@ ad_gpo_connect_done(struct tevent_req *subreq)
         goto done;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "sam_account_name is %s\n", sam_account_name);
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "sam_account_name is %s\n", sam_account_name);
 
     /* Convert the domain name into domain DN */
     ret = domain_to_basedn(state, state->ad_domain, &domain_dn);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Cannot convert domain name [%s] to base DN [%d]: %s\n",
               state->ad_domain, ret, sss_strerror(ret));
         goto done;
@@ -2074,7 +2074,7 @@ ad_gpo_connect_done(struct tevent_req *subreq)
                                    false);
 
     if (subreq == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_get_generic_send failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_get_generic_send failed.\n");
         ret = EIO;
         goto done;
     }
@@ -2113,7 +2113,7 @@ ad_gpo_target_dn_retrieval_done(struct tevent_req *subreq)
     if (ret != EOK) {
         ret = sdap_id_op_done(state->sdap_op, ret, &dp_error);
         if (ret == EAGAIN && dp_error == DP_ERR_OFFLINE) {
-            DEBUG(SSSDBG_TRACE_FUNC, "Preparing for offline operation.\n");
+            BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Preparing for offline operation.\n");
             ret = process_offline_gpos(state,
                                        state->user,
                                        state->gpo_implicit_deny,
@@ -2123,7 +2123,7 @@ ad_gpo_target_dn_retrieval_done(struct tevent_req *subreq)
                                        state->gpo_map_type);
 
             if (ret == EOK) {
-                DEBUG(SSSDBG_TRACE_FUNC, "process_offline_gpos succeeded\n");
+                BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "process_offline_gpos succeeded\n");
                 tevent_req_done(req);
                 goto done;
             } else {
@@ -2134,7 +2134,7 @@ ad_gpo_target_dn_retrieval_done(struct tevent_req *subreq)
             }
         }
 
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Unable to get policy target's DN: [%d](%s)\n",
                ret, sss_strerror(ret));
         ret = ENOENT;
@@ -2144,15 +2144,15 @@ ad_gpo_target_dn_retrieval_done(struct tevent_req *subreq)
     /* make sure there is only one non-NULL reply returned */
 
     if (reply_count < 1) {
-        DEBUG(SSSDBG_OP_FAILURE, "No DN retrieved for policy target.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "No DN retrieved for policy target.\n");
         ret = ENOENT;
         goto done;
     } else if (reply_count > 1) {
-        DEBUG(SSSDBG_OP_FAILURE, "Multiple replies for policy target\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Multiple replies for policy target\n");
         ret = ERR_INTERNAL;
         goto done;
     } else if (reply == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "reply_count is 1, but reply is NULL\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "reply_count is 1, but reply is NULL\n");
         ret = ERR_INTERNAL;
         goto done;
     }
@@ -2160,7 +2160,7 @@ ad_gpo_target_dn_retrieval_done(struct tevent_req *subreq)
     /* reply[0] holds requested attributes of single reply */
     ret = sysdb_attrs_get_string(reply[0], AD_AT_DN, &target_dn);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "sysdb_attrs_get_string failed: [%d](%s)\n",
                ret, sss_strerror(ret));
         goto done;
@@ -2173,7 +2173,7 @@ ad_gpo_target_dn_retrieval_done(struct tevent_req *subreq)
 
     ret = sysdb_attrs_get_uint32_t(reply[0], AD_AT_UAC, &uac);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "sysdb_attrs_get_uint32_t failed: [%d](%s)\n",
                ret, sss_strerror(ret));
         goto done;
@@ -2182,7 +2182,7 @@ ad_gpo_target_dn_retrieval_done(struct tevent_req *subreq)
     /* we only support computer policy targets, not users */
     if (!(uac & UAC_WORKSTATION_TRUST_ACCOUNT ||
           uac & UAC_SERVER_TRUST_ACCOUNT)) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Invalid userAccountControl (%x) value for machine account.\n",
               uac);
         ret = EINVAL;
@@ -2202,7 +2202,7 @@ ad_gpo_target_dn_retrieval_done(struct tevent_req *subreq)
                                        false);
 
         if (subreq == NULL) {
-            DEBUG(SSSDBG_OP_FAILURE, "sdap_get_generic_send failed.\n");
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_get_generic_send failed.\n");
             ret = ENOMEM;
             goto done;
         }
@@ -2276,7 +2276,7 @@ static void ad_gpo_get_host_sid_retrieval_done(struct tevent_req *subreq)
     if (ret != EOK) {
         ret = sdap_id_op_done(state->sdap_op, ret, &dp_error);
 
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "sdap_get_generic_recv failed: [%d](%s)\n",
                ret, sss_strerror(ret));
         ret = ENOENT;
@@ -2285,7 +2285,7 @@ static void ad_gpo_get_host_sid_retrieval_done(struct tevent_req *subreq)
     }
 
     if (reply_count == 0 || !reply) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "sdap_get_generic_recv failed to receive host sid\n");
         ret = EIO;
         goto done;
@@ -2294,13 +2294,13 @@ static void ad_gpo_get_host_sid_retrieval_done(struct tevent_req *subreq)
     /* reply[0] holds the requested attribute */
     ret = sysdb_attrs_get_el(reply[0], AD_AT_SID, &el);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "sysdb_attrs_get_el failed: [%d](%s)\n",
                ret, sss_strerror(ret));
         goto done;
     }
     if (el->num_values != 1) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "ad_gpo_get_host_sid_retrieval_done failed: sid not present\n");
         ret = EIO;
         goto done;
@@ -2311,7 +2311,7 @@ static void ad_gpo_get_host_sid_retrieval_done(struct tevent_req *subreq)
                                        subreq, &host_sid,
                                        (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
     if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "ndr_pull_struct_blob_all failed: [%d]\n",
               ndr_err);
         ret = EIO;
@@ -2322,7 +2322,7 @@ static void ad_gpo_get_host_sid_retrieval_done(struct tevent_req *subreq)
     ret = sss_idmap_smb_sid_to_sid(state->opts->idmap_ctx->map,
                                    &host_sid, &sid_str);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "sss_idmap_smb_sid_to_sid failed: [%d](%s)\n",
                ret, sss_strerror(ret));
         goto done;
@@ -2335,7 +2335,7 @@ static void ad_gpo_get_host_sid_retrieval_done(struct tevent_req *subreq)
                              state->user_domain->computer_timeout,
                              time(NULL));
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "sysdb_set_computer failed: [%d](%s)\n",
                ret, sss_strerror(ret));
         goto done;
@@ -2381,7 +2381,7 @@ ad_gpo_process_som_done(struct tevent_req *subreq)
     talloc_zfree(subreq);
 
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Unable to get som list: [%d](%s)\n",
                ret, sss_strerror(ret));
         ret = ENOENT;
@@ -2447,12 +2447,12 @@ ad_gpo_process_gpo_done(struct tevent_req *subreq)
     ret = sdap_id_op_done(state->sdap_op, ret, &dp_error);
 
     if (ret != EOK && ret != ENOENT) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Unable to get GPO list: [%d](%s)\n",
               ret, sss_strerror(ret));
         goto done;
     } else if (ret == ENOENT) {
-        DEBUG(SSSDBG_TRACE_FUNC,
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
               "No GPOs found that apply to this system.\n");
         /*
          * Delete the result object list, since there are no
@@ -2462,10 +2462,10 @@ ad_gpo_process_gpo_done(struct tevent_req *subreq)
         if (ret != EOK) {
             switch (ret) {
             case ENOENT:
-                DEBUG(SSSDBG_TRACE_FUNC, "No GPO Result available in cache\n");
+                BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "No GPO Result available in cache\n");
                 break;
             default:
-                DEBUG(SSSDBG_FATAL_FAILURE,
+                BE_REQ_DEBUG(SSSDBG_FATAL_FAILURE, req,
                       "Could not delete GPO Result from cache: [%s]\n",
                       sss_strerror(ret));
                 goto done;
@@ -2483,7 +2483,7 @@ ad_gpo_process_gpo_done(struct tevent_req *subreq)
                                      &state->dacl_filtered_gpos,
                                      &state->num_dacl_filtered_gpos);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Unable to filter GPO list by DACL: [%d](%s)\n",
               ret, sss_strerror(ret));
         goto done;
@@ -2491,7 +2491,7 @@ ad_gpo_process_gpo_done(struct tevent_req *subreq)
 
     if (state->dacl_filtered_gpos[0] == NULL) {
         /* since no applicable gpos were found, there is nothing to enforce */
-        DEBUG(SSSDBG_TRACE_FUNC,
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
               "no applicable gpos found after dacl filtering\n");
 
         /*
@@ -2502,10 +2502,10 @@ ad_gpo_process_gpo_done(struct tevent_req *subreq)
         if (ret != EOK) {
             switch (ret) {
             case ENOENT:
-                DEBUG(SSSDBG_TRACE_FUNC, "No GPO Result available in cache\n");
+                BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "No GPO Result available in cache\n");
                 break;
             default:
-                DEBUG(SSSDBG_FATAL_FAILURE,
+                BE_REQ_DEBUG(SSSDBG_FATAL_FAILURE, req,
                       "Could not delete GPO Result from cache: [%s]\n",
                       sss_strerror(ret));
                 goto done;
@@ -2513,7 +2513,7 @@ ad_gpo_process_gpo_done(struct tevent_req *subreq)
         }
 
         if (state->gpo_implicit_deny == true) {
-            DEBUG(SSSDBG_TRACE_FUNC,
+            BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
                   "No applicable GPOs have been found and ad_gpo_implicit_deny"
                   " is set to 'true'. The user will be denied access.\n");
             ret = ERR_ACCESS_DENIED;
@@ -2525,7 +2525,7 @@ ad_gpo_process_gpo_done(struct tevent_req *subreq)
     }
 
     for (i = 0; i < state->num_dacl_filtered_gpos; i++) {
-        DEBUG(SSSDBG_TRACE_FUNC, "dacl_filtered_gpos[%d]->gpo_guid is %s\n", i,
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "dacl_filtered_gpos[%d]->gpo_guid is %s\n", i,
               state->dacl_filtered_gpos[i]->gpo_guid);
     }
 
@@ -2537,7 +2537,7 @@ ad_gpo_process_gpo_done(struct tevent_req *subreq)
                                          &state->num_cse_filtered_gpos);
 
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Unable to filter GPO list by CSE_GUID: [%d](%s)\n",
                ret, sss_strerror(ret));
         goto done;
@@ -2545,11 +2545,11 @@ ad_gpo_process_gpo_done(struct tevent_req *subreq)
 
     if (state->cse_filtered_gpos[0] == NULL) {
         /* no gpos contain "SecuritySettings" cse_guid, nothing to enforce */
-        DEBUG(SSSDBG_TRACE_FUNC,
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
               "no applicable gpos found after cse_guid filtering\n");
 
         if (state->gpo_implicit_deny == true) {
-            DEBUG(SSSDBG_TRACE_FUNC,
+            BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
                   "No applicable GPOs have been found and ad_gpo_implicit_deny"
                   " is set to 'true'. The user will be denied access.\n");
             ret = ERR_ACCESS_DENIED;
@@ -2569,7 +2569,7 @@ ad_gpo_process_gpo_done(struct tevent_req *subreq)
     }
 
     for (i = 0; i < state->num_cse_filtered_gpos; i++) {
-        DEBUG(SSSDBG_TRACE_FUNC, "cse_filtered_gpos[%d]->gpo_guid is %s\n", i,
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "cse_filtered_gpos[%d]->gpo_guid is %s\n", i,
                                   state->cse_filtered_gpos[i]->gpo_guid);
         cse_filtered_gpo_guids[i] = talloc_steal(cse_filtered_gpo_guids,
                                                  state->cse_filtered_gpos[i]->gpo_guid);
@@ -2579,7 +2579,7 @@ ad_gpo_process_gpo_done(struct tevent_req *subreq)
         }
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "num_cse_filtered_gpos: %d\n",
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "num_cse_filtered_gpos: %d\n",
           state->num_cse_filtered_gpos);
 
     /*
@@ -2592,10 +2592,10 @@ ad_gpo_process_gpo_done(struct tevent_req *subreq)
     if (ret != EOK) {
         switch (ret) {
         case ENOENT:
-            DEBUG(SSSDBG_TRACE_FUNC, "No GPO Result available in cache\n");
+            BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "No GPO Result available in cache\n");
             break;
         default:
-            DEBUG(SSSDBG_FATAL_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_FATAL_FAILURE, req,
                   "Could not delete GPO Result from cache: [%s]\n",
                   sss_strerror(ret));
             goto done;
@@ -2633,18 +2633,18 @@ ad_gpo_cse_step(struct tevent_req *req)
     /* cse_filtered_gpo is NULL after all GPO policy files have been downloaded */
     if (cse_filtered_gpo == NULL) return EOK;
 
-    DEBUG(SSSDBG_TRACE_FUNC, "cse filtered_gpos[%d]->gpo_guid is %s\n",
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "cse filtered_gpos[%d]->gpo_guid is %s\n",
           state->cse_gpo_index, cse_filtered_gpo->gpo_guid);
     for (i = 0; i < cse_filtered_gpo->num_gpo_cse_guids; i++) {
-        DEBUG(SSSDBG_TRACE_ALL,
+        BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req,
               "cse_filtered_gpos[%d]->gpo_cse_guids[%d]->gpo_guid is %s\n",
               state->cse_gpo_index, i, cse_filtered_gpo->gpo_cse_guids[i]);
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "smb_server: %s\n", cse_filtered_gpo->smb_server);
-    DEBUG(SSSDBG_TRACE_FUNC, "smb_share: %s\n", cse_filtered_gpo->smb_share);
-    DEBUG(SSSDBG_TRACE_FUNC, "smb_path: %s\n", cse_filtered_gpo->smb_path);
-    DEBUG(SSSDBG_TRACE_FUNC, "gpo_guid: %s\n", cse_filtered_gpo->gpo_guid);
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "smb_server: %s\n", cse_filtered_gpo->smb_server);
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "smb_share: %s\n", cse_filtered_gpo->smb_share);
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "smb_path: %s\n", cse_filtered_gpo->smb_path);
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "gpo_guid: %s\n", cse_filtered_gpo->gpo_guid);
 
     cse_filtered_gpo->policy_filename =
         talloc_asprintf(state,
@@ -2656,7 +2656,7 @@ ad_gpo_cse_step(struct tevent_req *req)
     }
 
     /* retrieve gpo cache entry; set cached_gpt_version to -1 if unavailable */
-    DEBUG(SSSDBG_TRACE_FUNC, "retrieving GPO from cache [%s]\n",
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "retrieving GPO from cache [%s]\n",
           cse_filtered_gpo->gpo_guid);
     ret = sysdb_gpo_get_gpo_by_guid(state,
                                     state->host_domain,
@@ -2685,16 +2685,16 @@ ad_gpo_cse_step(struct tevent_req *req)
             send_to_child = false;
         }
     } else if (ret == ENOENT) {
-        DEBUG(SSSDBG_TRACE_FUNC, "ENOENT\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "ENOENT\n");
         cached_gpt_version = -1;
     } else {
-        DEBUG(SSSDBG_FATAL_FAILURE, "Could not read GPO from cache: [%s]\n",
+        BE_REQ_DEBUG(SSSDBG_FATAL_FAILURE, req, "Could not read GPO from cache: [%s]\n",
               sss_strerror(ret));
         return ret;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "send_to_child: %d\n", send_to_child);
-    DEBUG(SSSDBG_TRACE_FUNC, "cached_gpt_version: %d\n", cached_gpt_version);
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "send_to_child: %d\n", send_to_child);
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "cached_gpt_version: %d\n", cached_gpt_version);
 
     cse_filtered_gpo->send_to_child = send_to_child;
 
@@ -2737,14 +2737,14 @@ ad_gpo_cse_done(struct tevent_req *subreq)
 
     const char *gpo_guid = cse_filtered_gpo->gpo_guid;
 
-    DEBUG(SSSDBG_TRACE_FUNC, "gpo_guid: %s\n", gpo_guid);
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "gpo_guid: %s\n", gpo_guid);
 
     ret = ad_gpo_process_cse_recv(subreq);
 
     talloc_zfree(subreq);
 
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "Unable to retrieve policy data: [%d](%s}\n",
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Unable to retrieve policy data: [%d](%s}\n",
               ret, sss_strerror(ret));
         goto done;
     }
@@ -2757,7 +2757,7 @@ ad_gpo_cse_done(struct tevent_req *subreq)
     ret = ad_gpo_store_policy_settings(state->host_domain,
                                        cse_filtered_gpo->policy_filename);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "ad_gpo_store_policy_settings failed: [%d](%s)\n",
               ret, sss_strerror(ret));
         goto done;
@@ -2776,7 +2776,7 @@ ad_gpo_cse_done(struct tevent_req *subreq)
                                              state->user_domain,
                                              state->host_domain);
         if (ret != EOK) {
-            DEBUG(SSSDBG_OP_FAILURE, "HBAC processing failed: [%d](%s}\n",
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "HBAC processing failed: [%d](%s}\n",
                   ret, sss_strerror(ret));
             goto done;
         }
@@ -3139,7 +3139,7 @@ ad_gpo_process_som_send(TALLOC_CTX *mem_ctx,
 
     req = tevent_req_create(mem_ctx, &state, struct ad_gpo_process_som_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -3154,7 +3154,7 @@ ad_gpo_process_som_send(TALLOC_CTX *mem_ctx,
     ret = ad_gpo_populate_som_list(state, ldb_ctx, target_dn,
                                    &state->num_soms, &state->som_list);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Unable to retrieve SOM List : [%d](%s)\n",
               ret, sss_strerror(ret));
         ret = ENOENT;
@@ -3162,7 +3162,7 @@ ad_gpo_process_som_send(TALLOC_CTX *mem_ctx,
     }
 
     if (state->som_list == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "target dn must have at least one parent\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "target dn must have at least one parent\n");
         ret = EINVAL;
         goto immediately;
     }
@@ -3171,7 +3171,7 @@ ad_gpo_process_som_send(TALLOC_CTX *mem_ctx,
                                  state->sdap_op, domain_name);
 
     if (subreq == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "ad_domain_info_send failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "ad_domain_info_send failed.\n");
         ret = ENOMEM;
         goto immediately;
     }
@@ -3208,14 +3208,14 @@ ad_gpo_site_name_retrieval_done(struct tevent_req *subreq)
     talloc_zfree(subreq);
 
     if (ret != EOK || site == NULL) {
-        DEBUG(SSSDBG_TRACE_FUNC,
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
               "Could not autodiscover AD site. This is not fatal if "
               "ad_site option was set.\n");
     }
 
     site_override = dp_opt_get_string(state->ad_options, AD_SITE);
     if (site_override != NULL) {
-        DEBUG(SSSDBG_TRACE_FUNC,
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
               "Overriding autodiscovered AD site value '%s' with '%s' from "
               "configuration.\n", site ? site : "none", site_override);
     }
@@ -3226,7 +3226,7 @@ ad_gpo_site_name_retrieval_done(struct tevent_req *subreq)
                 "option was not set in configuration. GPO will not work. "
                 "To work around this issue you can use ad_site option in SSSD "
                 "configuration.");
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Could not autodiscover AD site value using DNS and ad_site "
               "option was not set in configuration. GPO will not work. "
               "To work around this issue you can use ad_site option in SSSD "
@@ -3243,7 +3243,7 @@ ad_gpo_site_name_retrieval_done(struct tevent_req *subreq)
         return;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "Using AD site '%s'.\n", state->site_name);
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Using AD site '%s'.\n", state->site_name);
 
     /*
      * note: the configNC attribute is being retrieved here from the rootDSE
@@ -3259,7 +3259,7 @@ ad_gpo_site_name_retrieval_done(struct tevent_req *subreq)
                                    false);
 
     if (subreq == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_get_generic_send failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_get_generic_send failed.\n");
         tevent_req_error(req, ENOMEM);
         return;
     }
@@ -3288,7 +3288,7 @@ ad_gpo_site_dn_retrieval_done(struct tevent_req *subreq)
     if (ret != EOK) {
         ret = sdap_id_op_done(state->sdap_op, ret, &dp_error);
 
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Unable to get configNC: [%d](%s)\n", ret, sss_strerror(ret));
         ret = ENOENT;
         goto done;
@@ -3297,15 +3297,15 @@ ad_gpo_site_dn_retrieval_done(struct tevent_req *subreq)
     /* make sure there is only one non-NULL reply returned */
 
     if (reply_count < 1) {
-        DEBUG(SSSDBG_OP_FAILURE, "No configNC retrieved\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "No configNC retrieved\n");
         ret = ENOENT;
         goto done;
     } else if (reply_count > 1) {
-        DEBUG(SSSDBG_OP_FAILURE, "Multiple replies for configNC\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Multiple replies for configNC\n");
         ret = ERR_INTERNAL;
         goto done;
     } else if (reply == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "reply_count is 1, but reply is NULL\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "reply_count is 1, but reply is NULL\n");
         ret = ERR_INTERNAL;
         goto done;
     }
@@ -3313,7 +3313,7 @@ ad_gpo_site_dn_retrieval_done(struct tevent_req *subreq)
     /* reply[0] holds requested attributes of single reply */
     ret = sysdb_attrs_get_string(reply[0], AD_AT_CONFIG_NC, &configNC);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "sysdb_attrs_get_string failed: [%d](%s)\n",
               ret, sss_strerror(ret));
         goto done;
@@ -3346,7 +3346,7 @@ ad_gpo_site_dn_retrieval_done(struct tevent_req *subreq)
 
     i = 0;
     while (state->som_list[i]) {
-        DEBUG(SSSDBG_TRACE_FUNC, "som_list[%d]->som_dn is %s\n", i,
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "som_list[%d]->som_dn is %s\n", i,
               state->som_list[i]->som_dn);
         i++;
     }
@@ -3385,7 +3385,7 @@ ad_gpo_get_som_attrs_step(struct tevent_req *req)
                                    false);
 
     if (subreq == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_get_generic_send failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_get_generic_send failed.\n");
         return ENOMEM;
     }
 
@@ -3417,19 +3417,19 @@ ad_gpo_get_som_attrs_done(struct tevent_req *subreq)
     if (ret != EOK) {
         ret = sdap_id_op_done(state->sdap_op, ret, &dp_error);
 
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Unable to get SOM attributes: [%d](%s)\n",
               ret, sss_strerror(ret));
         ret = ENOENT;
         goto done;
     }
     if ((num_results < 1) || (results == NULL)) {
-        DEBUG(SSSDBG_OP_FAILURE, "no attrs found for SOM; try next SOM.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "no attrs found for SOM; try next SOM.\n");
         state->som_index++;
         ret = ad_gpo_get_som_attrs_step(req);
         goto done;
     } else if (num_results > 1) {
-        DEBUG(SSSDBG_OP_FAILURE, "Received multiple replies\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Received multiple replies\n");
         ret = ERR_INTERNAL;
         goto done;
     }
@@ -3438,14 +3438,14 @@ ad_gpo_get_som_attrs_done(struct tevent_req *subreq)
     ret = sysdb_attrs_get_el(results[0], AD_AT_GPLINK, &el);
 
     if (ret != EOK && ret != ENOENT) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "sysdb_attrs_get_el() failed: [%d](%s)\n",
               ret, sss_strerror(ret));
         goto done;
     }
 
     if ((ret == ENOENT) || (el->num_values == 0)) {
-        DEBUG(SSSDBG_OP_FAILURE, "no attrs found for SOM; try next SOM\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "no attrs found for SOM; try next SOM\n");
         state->som_index++;
         ret = ad_gpo_get_som_attrs_step(req);
         goto done;
@@ -3456,12 +3456,12 @@ ad_gpo_get_som_attrs_done(struct tevent_req *subreq)
     ret = sysdb_attrs_get_el(results[0], AD_AT_GPOPTIONS, &el);
 
     if (ret != EOK && ret != ENOENT) {
-        DEBUG(SSSDBG_OP_FAILURE, "sysdb_attrs_get_el() failed\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sysdb_attrs_get_el() failed\n");
         goto done;
     }
 
     if ((ret == ENOENT) || (el->num_values == 0)) {
-        DEBUG(SSSDBG_TRACE_ALL,
+        BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req,
               "gpoptions attr not found or has no value; defaults to 0\n");
         allow_enforced_only = 0;
     }  else {
@@ -3469,7 +3469,7 @@ ad_gpo_get_som_attrs_done(struct tevent_req *subreq)
         allow_enforced_only = strtouint32((char *)raw_gpoptions_value, NULL, 10);
         if (errno != 0) {
             ret = errno;
-            DEBUG(SSSDBG_OP_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
                   "strtouint32 failed: [%d](%s)\n", ret, sss_strerror(ret));
             goto done;
         }
@@ -3483,7 +3483,7 @@ ad_gpo_get_som_attrs_done(struct tevent_req *subreq)
                                       state->allow_enforced_only);
 
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "ad_gpo_populate_gplink_list() failed\n");
         goto done;
     }
@@ -4017,7 +4017,7 @@ ad_gpo_process_gpo_send(TALLOC_CTX *mem_ctx,
 
     req = tevent_req_create(mem_ctx, &state, struct ad_gpo_process_gpo_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -4039,14 +4039,14 @@ ad_gpo_process_gpo_send(TALLOC_CTX *mem_ctx,
                                          &state->num_candidate_gpos);
 
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Unable to retrieve GPO List: [%d](%s)\n",
               ret, sss_strerror(ret));
         goto immediately;
     }
 
     if (state->candidate_gpos == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "no gpos found\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "no gpos found\n");
         ret = ENOENT;
         goto immediately;
     }
@@ -4087,7 +4087,7 @@ ad_gpo_get_gpo_attrs_step(struct tevent_req *req)
                                  gpo_dn, SECINFO_DACL, attrs, state->timeout);
 
     if (subreq == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_sd_search_send failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_sd_search_send failed.\n");
         return ENOMEM;
     }
 
@@ -4138,7 +4138,7 @@ ad_gpo_get_gpo_attrs_done(struct tevent_req *subreq)
     if (ret != EOK) {
         ret = sdap_id_op_done(state->sdap_op, ret, &dp_error);
 
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Unable to get GPO attributes: [%d](%s)\n",
               ret, sss_strerror(ret));
         ret = ENOENT;
@@ -4170,13 +4170,13 @@ ad_gpo_get_gpo_attrs_done(struct tevent_req *subreq)
         } else {
             const char *gpo_dn = state->candidate_gpos[state->gpo_index]->gpo_dn;
 
-            DEBUG(SSSDBG_OP_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
                   "No attrs found for GPO [%s].\n", gpo_dn);
             ret = ENOENT;
             goto done;
         }
     } else if (num_results > 1) {
-        DEBUG(SSSDBG_OP_FAILURE, "Received multiple replies\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Received multiple replies\n");
         ret = ERR_INTERNAL;
         goto done;
     }
@@ -4211,7 +4211,7 @@ ad_gpo_get_sd_referral_done(struct tevent_req *subreq)
         /* Terminate the sdap_id_op */
         ret = sdap_id_op_done(state->sdap_op, ret, &dp_error);
 
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Unable to get referred GPO attributes: [%d](%s)\n",
               ret, sss_strerror(ret));
 
@@ -4319,7 +4319,7 @@ ad_gpo_sd_process_attrs(struct tevent_req *req,
         ret = ad_gpo_missing_or_unreadable_attr(state, req);
         goto done;
     } else if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "sysdb_attrs_get_string failed: [%d](%s)\n",
               ret, sss_strerror(ret));
         goto done;
@@ -4331,7 +4331,7 @@ ad_gpo_sd_process_attrs(struct tevent_req *req,
         goto done;
     }
 
-    DEBUG(SSSDBG_TRACE_ALL, "populating attrs for gpo_guid: %s\n",
+    BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req, "populating attrs for gpo_guid: %s\n",
           gp_gpo->gpo_guid);
 
     /* retrieve AD_AT_FILE_SYS_PATH */
@@ -4343,7 +4343,7 @@ ad_gpo_sd_process_attrs(struct tevent_req *req,
         ret = ad_gpo_missing_or_unreadable_attr(state, req);
         goto done;
     } else if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "sysdb_attrs_get_string failed: [%d](%s)\n",
               ret, sss_strerror(ret));
         goto done;
@@ -4355,15 +4355,15 @@ ad_gpo_sd_process_attrs(struct tevent_req *req,
                                         file_sys_path, &gp_gpo->smb_server,
                                         &gp_gpo->smb_share, &gp_gpo->smb_path);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "unable to extract smb components from file_sys_path: [%d](%s)\n",
               ret, sss_strerror(ret));
         goto done;
     }
 
-    DEBUG(SSSDBG_TRACE_ALL, "smb_server: %s\n", gp_gpo->smb_server);
-    DEBUG(SSSDBG_TRACE_ALL, "smb_share: %s\n", gp_gpo->smb_share);
-    DEBUG(SSSDBG_TRACE_ALL, "smb_path: %s\n", gp_gpo->smb_path);
+    BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req, "smb_server: %s\n", gp_gpo->smb_server);
+    BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req, "smb_share: %s\n", gp_gpo->smb_share);
+    BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req, "smb_path: %s\n", gp_gpo->smb_path);
 
     /* retrieve AD_AT_FUNC_VERSION */
     ret = sysdb_attrs_get_int32_t(result, AD_AT_FUNC_VERSION,
@@ -4372,19 +4372,19 @@ ad_gpo_sd_process_attrs(struct tevent_req *req,
         /* If this attribute is missing we can skip the GPO. It will
          * be filtered out according to MS-GPOL:
          * https://msdn.microsoft.com/en-us/library/cc232538.aspx */
-        DEBUG(SSSDBG_TRACE_ALL, "GPO with GUID %s is missing attribute "
+        BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req, "GPO with GUID %s is missing attribute "
               AD_AT_FUNC_VERSION " and will be skipped.\n", gp_gpo->gpo_guid);
         state->gpo_index++;
         ret = ad_gpo_get_gpo_attrs_step(req);
         goto done;
     } else if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "sysdb_attrs_get_int32_t failed: [%d](%s)\n",
               ret, sss_strerror(ret));
         goto done;
     }
 
-    DEBUG(SSSDBG_TRACE_ALL, "gpo_func_version: %d\n",
+    BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req, "gpo_func_version: %d\n",
                             gp_gpo->gpo_func_version);
 
     /* retrieve AD_AT_FLAGS */
@@ -4394,22 +4394,22 @@ ad_gpo_sd_process_attrs(struct tevent_req *req,
         ret = ad_gpo_missing_or_unreadable_attr(state, req);
         goto done;
     } else if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "sysdb_attrs_get_int32_t failed: [%d](%s)\n",
               ret, sss_strerror(ret));
         goto done;
     }
 
-    DEBUG(SSSDBG_TRACE_ALL, "gpo_flags: %d\n", gp_gpo->gpo_flags);
+    BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req, "gpo_flags: %d\n", gp_gpo->gpo_flags);
 
     /* retrieve AD_AT_NT_SEC_DESC */
     ret = sysdb_attrs_get_el(result, AD_AT_NT_SEC_DESC, &el);
     if (ret != EOK && ret != ENOENT) {
-        DEBUG(SSSDBG_OP_FAILURE, "sysdb_attrs_get_el() failed\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sysdb_attrs_get_el() failed\n");
         goto done;
     }
     if ((ret == ENOENT) || (el->num_values == 0)) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "nt_sec_desc attribute not found or has no value\n");
         ret = ad_gpo_missing_or_unreadable_attr(state, req);
         goto done;
@@ -4418,14 +4418,14 @@ ad_gpo_sd_process_attrs(struct tevent_req *req,
     ret = ad_gpo_parse_sd(gp_gpo, el[0].values[0].data, el[0].values[0].length,
                           &gp_gpo->gpo_sd);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "ad_gpo_parse_sd() failed\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "ad_gpo_parse_sd() failed\n");
         goto done;
     }
 
     /* retrieve AD_AT_MACHINE_EXT_NAMES */
     ret = sysdb_attrs_get_el(result, AD_AT_MACHINE_EXT_NAMES, &el);
     if (ret != EOK && ret != ENOENT) {
-        DEBUG(SSSDBG_OP_FAILURE, "sysdb_attrs_get_el() failed\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sysdb_attrs_get_el() failed\n");
         goto done;
     }
 
@@ -4435,7 +4435,7 @@ ad_gpo_sd_process_attrs(struct tevent_req *req,
          * if gpo has no machine_ext_names (which is perfectly valid: it could
          * have only user_ext_names, for example), we continue to next gpo
          */
-        DEBUG(SSSDBG_TRACE_ALL,
+        BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req,
               "machine_ext_names attribute not found or has no value\n");
         state->gpo_index++;
     } else {
@@ -4446,7 +4446,7 @@ ad_gpo_sd_process_attrs(struct tevent_req *req,
                                              &gp_gpo->gpo_cse_guids,
                                              &gp_gpo->num_gpo_cse_guids);
         if (ret != EOK) {
-            DEBUG(SSSDBG_OP_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
                   "ad_gpo_parse_machine_ext_names() failed\n");
             goto done;
         }
@@ -4614,7 +4614,7 @@ ad_gpo_process_cse_send(TALLOC_CTX *mem_ctx,
 
     req = tevent_req_create(mem_ctx, &state, struct ad_gpo_process_cse_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -4637,7 +4637,7 @@ ad_gpo_process_cse_send(TALLOC_CTX *mem_ctx,
     state->smb_cse_suffix = smb_cse_suffix;
     state->io = talloc(state, struct child_io_fds);
     if (state->io == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "talloc failed.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "talloc failed.\n");
         ret = ENOMEM;
         goto immediately;
     }
@@ -4650,13 +4650,13 @@ ad_gpo_process_cse_send(TALLOC_CTX *mem_ctx,
     ret = create_cse_send_buffer(state, smb_server, smb_share, smb_path,
                                  smb_cse_suffix, cached_gpt_version, &buf);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "create_cse_send_buffer failed.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "create_cse_send_buffer failed.\n");
         goto immediately;
     }
 
     ret = gpo_fork_child(req);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "gpo_fork_child failed.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "gpo_fork_child failed.\n");
         goto immediately;
     }
 
@@ -4734,13 +4734,13 @@ static void gpo_cse_done(struct tevent_req *subreq)
     ret = ad_gpo_parse_gpo_child_response(state->buf, state->len,
                                           &sysvol_gpt_version, &child_result);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "ad_gpo_parse_gpo_child_response failed: [%d][%s]\n",
               ret, sss_strerror(ret));
         tevent_req_error(req, ret);
         return;
     } else if (child_result != 0){
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "Error in gpo_child: [%d][%s]\n",
               child_result, strerror(child_result));
         tevent_req_error(req, child_result);
@@ -4748,11 +4748,11 @@ static void gpo_cse_done(struct tevent_req *subreq)
     }
 
     now = time(NULL);
-    DEBUG(SSSDBG_TRACE_FUNC, "sysvol_gpt_version: %d\n", sysvol_gpt_version);
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "sysvol_gpt_version: %d\n", sysvol_gpt_version);
     ret = sysdb_gpo_store_gpo(state->domain, state->gpo_guid, sysvol_gpt_version,
                               state->gpo_timeout_option, now);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "Unable to store gpo cache entry: [%d](%s}\n",
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Unable to store gpo cache entry: [%d](%s}\n",
               ret, sss_strerror(ret));
         tevent_req_error(req, ret);
         return;
@@ -4782,14 +4782,14 @@ gpo_fork_child(struct tevent_req *req)
     ret = pipe(pipefd_from_child);
     if (ret == -1) {
         ret = errno;
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "pipe (from) failed [%d][%s].\n", errno, strerror(errno));
         goto fail;
     }
     ret = pipe(pipefd_to_child);
     if (ret == -1) {
         ret = errno;
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "pipe (to) failed [%d][%s].\n", errno, strerror(errno));
         goto fail;
     }
@@ -4803,7 +4803,7 @@ gpo_fork_child(struct tevent_req *req)
                       STDIN_FILENO, AD_GPO_CHILD_OUT_FILENO);
 
         /* We should never get here */
-        DEBUG(SSSDBG_CRIT_FAILURE, "BUG: Could not exec gpo_child:\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "BUG: Could not exec gpo_child:\n");
     } else if (pid > 0) { /* parent */
         state->child_pid = pid;
         state->io->read_from_child_fd = pipefd_from_child[0];
@@ -4815,13 +4815,13 @@ gpo_fork_child(struct tevent_req *req)
 
         ret = child_handler_setup(state->ev, pid, NULL, NULL, NULL);
         if (ret != EOK) {
-            DEBUG(SSSDBG_CRIT_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
                   "Could not set up child signal handler\n");
             goto fail;
         }
     } else { /* error */
         ret = errno;
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "fork failed [%d][%s].\n", errno, strerror(errno));
         goto fail;
     }
@@ -4881,7 +4881,7 @@ ad_gpo_get_sd_referral_send(TALLOC_CTX *mem_ctx,
     /* Parse the URL for the domain */
     ret = ldap_url_parse(referral, &lud);
     if (ret != LDAP_SUCCESS) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "Failed to parse referral URI (%s)!\n", referral);
         ret = EINVAL;
         goto done;
@@ -4889,7 +4889,7 @@ ad_gpo_get_sd_referral_send(TALLOC_CTX *mem_ctx,
 
     state->gpo_dn = talloc_strdup(state, lud->lud_dn);
     if (!state->gpo_dn) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Could not copy referral DN (%s)!\n", lud->lud_dn);
         ldap_free_urldesc(lud);
         ret = ENOMEM;
@@ -4903,7 +4903,7 @@ ad_gpo_get_sd_referral_send(TALLOC_CTX *mem_ctx,
     state->ref_domain = find_domain_by_name(state->host_domain,
                                             lud->lud_host, true);
     if (!state->ref_domain) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "Could not find domain matching [%s]\n",
               lud->lud_host);
         ldap_free_urldesc(lud);
@@ -4917,7 +4917,7 @@ ad_gpo_get_sd_referral_send(TALLOC_CTX *mem_ctx,
     state->conn = ad_get_dom_ldap_conn(state->access_ctx->ad_id_ctx,
                                        state->ref_domain);
     if (!state->conn) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "No connection for %s\n", state->ref_domain->name);
         ret = EINVAL;
         goto done;
@@ -4929,7 +4929,7 @@ ad_gpo_get_sd_referral_send(TALLOC_CTX *mem_ctx,
      */
     ret = ldap_url_parse(state->conn->service->uri, &lud);
     if (ret != LDAP_SUCCESS) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "Failed to parse service URI (%s)!\n", referral);
         ret = EINVAL;
         goto done;
@@ -4945,7 +4945,7 @@ ad_gpo_get_sd_referral_send(TALLOC_CTX *mem_ctx,
     /* Start an ID operation for the referral */
     state->ref_op = sdap_id_op_create(state, state->conn->conn_cache);
     if (!state->ref_op) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_id_op_create failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_id_op_create failed.\n");
         ret = ENOMEM;
         goto done;
     }
@@ -4953,7 +4953,7 @@ ad_gpo_get_sd_referral_send(TALLOC_CTX *mem_ctx,
     /* Establish the sdap_id_op connection */
     subreq = sdap_id_op_connect_send(state->ref_op, state, &ret);
     if (subreq == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_id_op_connect_send failed: %d(%s).\n",
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_id_op_connect_send failed: %d(%s).\n",
                                   ret, sss_strerror(ret));
         goto done;
     }
@@ -4987,11 +4987,11 @@ ad_gpo_get_sd_referral_conn_done(struct tevent_req *subreq)
     talloc_zfree(subreq);
     if (ret != EOK) {
         if (dp_error == DP_ERR_OFFLINE) {
-            DEBUG(SSSDBG_TRACE_FUNC,
+            BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
                   "Backend is marked offline, retry later!\n");
             tevent_req_done(req);
         } else {
-            DEBUG(SSSDBG_MINOR_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
                   "Cross-realm GPO processing failed to connect to " \
                    "referred LDAP server: (%d)[%s]\n",
                    ret, sss_strerror(ret));
@@ -5008,7 +5008,7 @@ ad_gpo_get_sd_referral_conn_done(struct tevent_req *subreq)
                                  attrs,
                                  state->timeout);
     if (subreq == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_sd_search_send failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_sd_search_send failed.\n");
         tevent_req_error(req, ENOMEM);
         return;
     }
@@ -5036,7 +5036,7 @@ ad_gpo_get_sd_referral_search_done(struct tevent_req *subreq)
     if (ret != EOK) {
         ret = sdap_id_op_done(state->ref_op, ret, &dp_error);
 
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Unable to get GPO attributes: [%d](%s)\n",
               ret, sss_strerror(ret));
         ret = ENOENT;
@@ -5052,13 +5052,13 @@ ad_gpo_get_sd_referral_search_done(struct tevent_req *subreq)
          * limiting) the referral chain would be fairly complex, so
          * we will do it later if it ever becomes necessary.
          */
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "No attrs found for referred GPO [%s].\n", state->gpo_dn);
         ret = ENOENT;
         goto done;
 
     } else if (num_results > 1) {
-        DEBUG(SSSDBG_OP_FAILURE, "Received multiple replies\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Received multiple replies\n");
         ret = ERR_INTERNAL;
         goto done;
     }

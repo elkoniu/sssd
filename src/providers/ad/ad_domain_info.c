@@ -258,7 +258,7 @@ ad_domain_info_next(struct tevent_req *req)
                                                   SDAP_SEARCH_TIMEOUT),
                                    false);
     if (subreq == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_get_generic_send failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_get_generic_send failed.\n");
         return ENOMEM;
     }
     tevent_req_set_callback(subreq, ad_domain_info_next_done, req);
@@ -287,7 +287,7 @@ ad_domain_info_next_done(struct tevent_req *subreq)
     ret = sdap_get_generic_recv(subreq, state, &reply_count, &reply);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_get_generic_send request failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_get_generic_send request failed.\n");
         goto done;
     }
 
@@ -307,7 +307,7 @@ ad_domain_info_next_done(struct tevent_req *subreq)
     } else if (reply_count == 1) {
         ret = sysdb_attrs_get_el(reply[0], AD_AT_OBJECT_SID, &el);
         if (ret != EOK || el->num_values != 1) {
-            DEBUG(SSSDBG_OP_FAILURE, "sdap_attrs_get_el failed.\n");
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_attrs_get_el failed.\n");
             goto done;
         }
 
@@ -316,7 +316,7 @@ ad_domain_info_next_done(struct tevent_req *subreq)
                                        el->values[0].length,
                                        &sid_str);
         if (err != IDMAP_SUCCESS) {
-            DEBUG(SSSDBG_MINOR_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
                   "Could not convert SID: [%s].\n", idmap_error_string(err));
             ret = EFAULT;
             goto done;
@@ -324,18 +324,18 @@ ad_domain_info_next_done(struct tevent_req *subreq)
 
         state->sid = talloc_steal(state, sid_str);
     } else {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "More than one result for domain SID found.\n");
         ret = EINVAL;
         goto done;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "Found SID [%s].\n", state->sid);
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Found SID [%s].\n", state->sid);
 
     ntver = sss_ldap_encode_ndr_uint32(state, NETLOGON_NT_VERSION_5EX |
                                        NETLOGON_NT_VERSION_WITH_CLOSEST_SITE);
     if (ntver == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "sss_ldap_encode_ndr_uint32 failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sss_ldap_encode_ndr_uint32 failed.\n");
         ret = ENOMEM;
         goto done;
     }
@@ -344,7 +344,7 @@ ad_domain_info_next_done(struct tevent_req *subreq)
                              AD_AT_DNS_DOMAIN, state->dom_name,
                              AD_AT_NT_VERSION, ntver);
     if (filter == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "talloc_asprintf failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "talloc_asprintf failed.\n");
         ret = ENOMEM;
         goto done;
     }
@@ -357,7 +357,7 @@ ad_domain_info_next_done(struct tevent_req *subreq)
                                                   SDAP_SEARCH_TIMEOUT),
                                    false);
     if (subreq == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_get_generic_send failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_get_generic_send failed.\n");
         ret = ENOMEM;
         goto done;
     }
@@ -384,18 +384,18 @@ ad_domain_info_netlogon_done(struct tevent_req *subreq)
     ret = sdap_get_generic_recv(subreq, state, &reply_count, &reply);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_get_generic_send request failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_get_generic_send request failed.\n");
         tevent_req_error(req, ret);
         return;
     }
 
     /* Failure to get the flat name is not fatal. Just quit. */
     if (reply_count == 0) {
-        DEBUG(SSSDBG_MINOR_FAILURE, "No netlogon data available. Flat name " \
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "No netlogon data available. Flat name " \
                                      "might not be usable\n");
         goto done;
     } else if (reply_count > 1) {
-        DEBUG(SSSDBG_MINOR_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
                 "More than one netlogon info returned.\n");
         goto done;
     }
@@ -405,16 +405,16 @@ ad_domain_info_netlogon_done(struct tevent_req *subreq)
     ret = netlogon_get_domain_info(state, reply[0], false, &state->flat,
                                    &state->site, &state->forest);
     if (ret != EOK) {
-        DEBUG(SSSDBG_MINOR_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
               "Could not get the flat name or forest: %d:[%s]\n",
               ret, sss_strerror(ret));
         /* Not fatal. Just quit. */
         goto done;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "Found flat name [%s].\n", state->flat);
-    DEBUG(SSSDBG_TRACE_FUNC, "Found site [%s].\n", state->site);
-    DEBUG(SSSDBG_TRACE_FUNC, "Found forest [%s].\n", state->forest);
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Found flat name [%s].\n", state->flat);
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Found site [%s].\n", state->site);
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Found forest [%s].\n", state->forest);
 
 done:
     tevent_req_done(req);
