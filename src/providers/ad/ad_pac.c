@@ -556,7 +556,7 @@ struct tevent_req *ad_handle_pac_initgr_send(TALLOC_CTX *mem_ctx,
     req = tevent_req_create(mem_ctx, &state,
                             struct ad_handle_pac_initgr_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "tevent_req_create failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "tevent_req_create failed.\n");
         return NULL;
     }
     state->user_dom = sdom->dom;
@@ -576,7 +576,7 @@ struct tevent_req *ad_handle_pac_initgr_send(TALLOC_CTX *mem_ctx,
                                           &user_sid, &primary_group_sid,
                                           &num_sids, &group_sids);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "ad_get_pac_data_from_user_entry failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "ad_get_pac_data_from_user_entry failed.\n");
         goto done;
     }
 
@@ -601,7 +601,7 @@ struct tevent_req *ad_handle_pac_initgr_send(TALLOC_CTX *mem_ctx,
          * without name is replaced by the full group object.
          */
 
-        DEBUG(SSSDBG_TRACE_ALL, "Running PAC processing with id-mapping.\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req, "Running PAC processing with id-mapping.\n");
 
         ret = sdap_ad_save_group_membership_with_idmapping(state->username,
                                                         state->opts,
@@ -609,7 +609,7 @@ struct tevent_req *ad_handle_pac_initgr_send(TALLOC_CTX *mem_ctx,
                                                         id_ctx->opts->idmap_ctx,
                                                         num_sids, group_sids);
         if (ret != EOK) {
-            DEBUG(SSSDBG_OP_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
                   "sdap_ad_save_group_membership_with_idmapping failed.\n");
         }
 
@@ -618,7 +618,7 @@ struct tevent_req *ad_handle_pac_initgr_send(TALLOC_CTX *mem_ctx,
         goto done;
     } else {
 
-        DEBUG(SSSDBG_TRACE_ALL, "Running PAC processing with external IDs.\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req, "Running PAC processing with external IDs.\n");
 
         ret = sdap_ad_tokengroups_get_posix_members(state, sdom->dom,
                                                     num_sids, group_sids,
@@ -627,7 +627,7 @@ struct tevent_req *ad_handle_pac_initgr_send(TALLOC_CTX *mem_ctx,
                                                     &state->num_cached_groups,
                                                     &state->cached_groups);
         if (ret != EOK) {
-            DEBUG(SSSDBG_OP_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
                   "sdap_ad_tokengroups_get_posix_members failed.\n");
             goto done;
         }
@@ -638,7 +638,7 @@ struct tevent_req *ad_handle_pac_initgr_send(TALLOC_CTX *mem_ctx,
                                            id_ctx->opts, sdom->dom,
                                            state->missing_sids);
         if (subreq == NULL) {
-            DEBUG(SSSDBG_OP_FAILURE, "sdap_ad_resolve_sids_send failed.\n");
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_ad_resolve_sids_send failed.\n");
             ret = ENOMEM;
             goto done;
         }
@@ -675,7 +675,7 @@ static void ad_handle_pac_initgr_lookup_sids_done(struct tevent_req *subreq)
     ret = sdap_ad_resolve_sids_recv(subreq);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Unable to resolve missing SIDs "
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Unable to resolve missing SIDs "
                                    "[%d]: %s\n", ret, strerror(ret));
         goto done;
     }
@@ -687,7 +687,7 @@ static void ad_handle_pac_initgr_lookup_sids_done(struct tevent_req *subreq)
                                                 &num_cached_groups,
                                                 &cached_groups);
     if (ret != EOK){
-        DEBUG(SSSDBG_MINOR_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
               "sdap_ad_tokengroups_get_posix_members failed [%d]: %s\n",
               ret, strerror(ret));
         goto done;
@@ -709,7 +709,7 @@ static void ad_handle_pac_initgr_lookup_sids_done(struct tevent_req *subreq)
                                              state->user_dom,
                                              state->cached_groups);
     if (ret != EOK) {
-        DEBUG(SSSDBG_MINOR_FAILURE, "Membership update failed [%d]: %s\n",
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "Membership update failed [%d]: %s\n",
                                      ret, strerror(ret));
         goto done;
     }

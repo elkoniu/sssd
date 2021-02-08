@@ -273,7 +273,7 @@ ad_access_send(TALLOC_CTX *mem_ctx,
     ret = ad_parse_access_filter(state, domain, ctx->sdap_access_ctx->filter,
                                  &state->filter);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Could not determine the best filter\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Could not determine the best filter\n");
         ret = ERR_ACCESS_DENIED;
         goto done;
     }
@@ -366,7 +366,7 @@ ad_sdap_access_done(struct tevent_req *subreq)
         /* If possible, retry with LDAP */
         state->cindex++;
         if (state->clist[state->cindex] == NULL) {
-            DEBUG(SSSDBG_OP_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
                   "Error retrieving access check result: %s\n",
                   sss_strerror(ret));
             tevent_req_error(req, ret);
@@ -430,14 +430,14 @@ ad_gpo_access_done(struct tevent_req *subreq)
     talloc_zfree(subreq);
 
     if (ret == EOK) {
-        DEBUG(SSSDBG_TRACE_FUNC, "GPO-based access control successful.\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "GPO-based access control successful.\n");
         tevent_req_done(req);
     } else {
-        DEBUG(SSSDBG_OP_FAILURE, "GPO-based access control failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "GPO-based access control failed.\n");
         if (mode == GPO_ACCESS_CONTROL_ENFORCING) {
             tevent_req_error(req, ret);
         } else {
-            DEBUG(SSSDBG_OP_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
                   "Ignoring error: [%d](%s); GPO-based access control failed, "
                   "but GPO is not in enforcing mode.\n",
                   ret, sss_strerror(ret));
@@ -476,7 +476,7 @@ ad_pam_access_handler_send(TALLOC_CTX *mem_ctx,
     req = tevent_req_create(mem_ctx, &state,
                             struct ad_pam_access_handler_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
         return NULL;
     }
 

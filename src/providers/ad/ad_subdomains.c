@@ -1030,7 +1030,7 @@ ad_get_slave_domain_send(TALLOC_CTX *mem_ctx,
     req = tevent_req_create(mem_ctx, &state,
                             struct ad_get_slave_domain_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -1050,7 +1050,7 @@ ad_get_slave_domain_send(TALLOC_CTX *mem_ctx,
 
     state->sdap_op = sdap_id_op_create(state, root_id_ctx->ldap_ctx->conn_cache);
     if (state->sdap_op == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_id_op_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_id_op_create() failed\n");
         ret = ENOMEM;
         goto immediately;
     }
@@ -1082,7 +1082,7 @@ static errno_t ad_get_slave_domain_retry(struct tevent_req *req)
 
     subreq = sdap_id_op_connect_send(state->sdap_op, state, &ret);
     if (subreq == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "sdap_id_op_connect_send() failed "
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "sdap_id_op_connect_send() failed "
               "[%d]: %s\n", ret, sss_strerror(ret));
         return ret;
     }
@@ -1109,10 +1109,10 @@ static void ad_get_slave_domain_connect_done(struct tevent_req *subreq)
     talloc_zfree(subreq);
 
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Unable to connect to LDAP "
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Unable to connect to LDAP "
               "[%d]: %s\n", ret, sss_strerror(ret));
         if (dp_error == DP_ERR_OFFLINE) {
-            DEBUG(SSSDBG_MINOR_FAILURE, "No AD server is available, "
+            BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "No AD server is available, "
                   "cannot get the subdomain list while offline\n");
             ret = ERR_OFFLINE;
         }
@@ -1152,7 +1152,7 @@ static void ad_get_slave_domain_done(struct tevent_req *subreq)
     ret = sdap_search_bases_recv(subreq, state, &reply_count, &reply);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Unable to lookup slave domain data "
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Unable to lookup slave domain data "
               "[%d]: %s\n", ret, sss_strerror(ret));
         /* We continue to finish sdap_id_op. */
     }
@@ -1181,7 +1181,7 @@ static void ad_get_slave_domain_done(struct tevent_req *subreq)
                                 reply_count, reply, state->root_attrs,
                                 &nsubdoms, &subdoms);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "Cannot process subdomain list\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Cannot process subdomain list\n");
         tevent_req_error(req, ret);
         return;
     }
@@ -1192,17 +1192,17 @@ static void ad_get_slave_domain_done(struct tevent_req *subreq)
                                 &state->sd_ctx->last_refreshed,
                                 &has_changes);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "Failed to refresh subdomains.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Failed to refresh subdomains.\n");
         goto done;
     }
 
-    DEBUG(SSSDBG_TRACE_LIBS, "There are %schanges\n",
+    BE_REQ_DEBUG(SSSDBG_TRACE_LIBS, req, "There are %schanges\n",
           has_changes ? "" : "no ");
 
     if (has_changes) {
         ret = ad_subdom_reinit(state->sd_ctx);
         if (ret != EOK) {
-            DEBUG(SSSDBG_OP_FAILURE, "Could not reinitialize subdomains\n");
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Could not reinitialize subdomains\n");
             goto done;
         }
     }
@@ -1314,7 +1314,7 @@ ad_get_root_domain_send(TALLOC_CTX *mem_ctx,
 
     req = tevent_req_create(mem_ctx, &state, struct ad_get_root_domain_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -1325,7 +1325,7 @@ ad_get_root_domain_send(TALLOC_CTX *mem_ctx,
         goto immediately;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "Looking up the forest root domain.\n");
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Looking up the forest root domain.\n");
 
     state->sd_ctx = sd_ctx;
     state->opts = opts = sd_ctx->sdap_id_ctx->opts;
@@ -1379,26 +1379,26 @@ static void ad_get_root_domain_done(struct tevent_req *subreq)
                                               &state->reply);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "Unable to lookup forest root information "
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Unable to lookup forest root information "
               "[%d]: %s\n", ret, sss_strerror(ret));
         goto done;
     }
 
     if (state->reply_count == 0) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "No information provided for root domain, trying directly.\n");
         subreq = ad_check_domain_send(state, state->ev, state->be_ctx,
                                       state->sd_ctx->ad_id_ctx, state->forest,
                                       state->domain);
         if (subreq == NULL) {
-            DEBUG(SSSDBG_OP_FAILURE, "ad_check_domain_send() failed.\n");
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "ad_check_domain_send() failed.\n");
             ret = ENOMEM;
             goto done;
         }
         tevent_req_set_callback(subreq, ad_check_root_domain_done, req);
         return;
     } else if (state->reply_count > 1) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Multiple results for root domain search, "
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Multiple results for root domain search, "
               "domain list might be incomplete!\n");
         ret = ERR_MALFORMED_ENTRY;
         goto done;
@@ -1406,7 +1406,7 @@ static void ad_get_root_domain_done(struct tevent_req *subreq)
 
     ret = ad_get_root_domain_refresh(state);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "ad_get_root_domain_refresh() failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "ad_get_root_domain_refresh() failed.\n");
     }
 
 done:
@@ -1434,20 +1434,20 @@ static void ad_check_root_domain_done(struct tevent_req *subreq)
     ret = ad_check_domain_recv(state, subreq, &flat, &id, NULL, NULL);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "Unable to check forest root information "
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Unable to check forest root information "
               "[%d]: %s\n", ret, sss_strerror(ret));
         goto done;
     }
 
     if (flat == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "NetBIOS name of forest root not available.\n");
         ret = EINVAL;
         goto done;
     }
 
     if (id == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "Domain SID of forest root not available.\n");
         ret = EINVAL;
         goto done;
@@ -1455,35 +1455,35 @@ static void ad_check_root_domain_done(struct tevent_req *subreq)
 
     state->reply = talloc_array(state, struct sysdb_attrs *, 1);
     if (state->reply == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "talloc_array() failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "talloc_array() failed.\n");
         ret = ENOMEM;
         goto done;
     }
 
     state->reply[0] = sysdb_new_attrs(state->reply);
     if (state->reply[0] == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "sysdb_new_attrs() failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sysdb_new_attrs() failed.\n");
         ret = ENOMEM;
         goto done;
     }
 
     ret = sysdb_attrs_add_string(state->reply[0], AD_AT_FLATNAME, flat);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "sysdb_attrs_add_string() failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sysdb_attrs_add_string() failed.\n");
         goto done;
     }
 
     ret = sysdb_attrs_add_string(state->reply[0], AD_AT_TRUST_PARTNER,
                                  state->forest);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "sysdb_attrs_add_string() failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sysdb_attrs_add_string() failed.\n");
         goto done;
     }
 
     err = sss_idmap_sid_to_bin_sid(state->idmap_ctx->map, id,
                                    &id_val.data, &id_val.length);
     if (err != IDMAP_SUCCESS) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Could not convert SID: [%s].\n", idmap_error_string(err));
         ret = EFAULT;
         goto done;
@@ -1491,7 +1491,7 @@ static void ad_check_root_domain_done(struct tevent_req *subreq)
 
     ret = sysdb_attrs_add_val(state->reply[0], AD_AT_SID, &id_val);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "sysdb_attrs_add_string() failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sysdb_attrs_add_string() failed.\n");
         goto done;
     }
 
@@ -1499,7 +1499,7 @@ static void ad_check_root_domain_done(struct tevent_req *subreq)
 
     ret = ad_get_root_domain_refresh(state);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "ad_get_root_domain_refresh() failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "ad_get_root_domain_refresh() failed.\n");
     }
 
 done:
@@ -1610,7 +1610,7 @@ ad_check_gc_usability_send(TALLOC_CTX *mem_ctx,
     state->is_gc_usable = false;
 
     if (dp_opt_get_bool(ad_options->basic, AD_ENABLE_GC) == false) {
-        DEBUG(SSSDBG_TRACE_FUNC, "GC explicitly disabled\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "GC explicitly disabled\n");
         state->is_gc_usable = false;
         ret = EOK;
         goto immediately;
@@ -1621,7 +1621,7 @@ ad_check_gc_usability_send(TALLOC_CTX *mem_ctx,
                                                         domain_name,
                                                         domain_sid);
     if (uses_id_mapping == true) {
-        DEBUG(SSSDBG_TRACE_FUNC, "GC always usable while ID mapping\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "GC always usable while ID mapping\n");
         state->is_gc_usable = true;
         ret = EOK;
         goto immediately;
@@ -1634,7 +1634,7 @@ ad_check_gc_usability_send(TALLOC_CTX *mem_ctx,
      * if we can't detect it from the rootDSE.
      */
     if (state->sdap_opts->schema_basedn == NULL) {
-        DEBUG(SSSDBG_TRACE_FUNC,
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
               "No idea where to look for the schema, disabling GC\n");
         state->is_gc_usable = false;
         ret = EOK;
@@ -1645,7 +1645,7 @@ ad_check_gc_usability_send(TALLOC_CTX *mem_ctx,
     state->attrs[1] = AD_AT_SCHEMA_IS_REPL;
     state->attrs[2] = NULL;
 
-    DEBUG(SSSDBG_TRACE_FUNC, "Checking for POSIX attributes in GC\n");
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Checking for POSIX attributes in GC\n");
 
     filter = talloc_asprintf(
                         state,
@@ -1706,14 +1706,14 @@ static void ad_check_gc_usability_search_done(struct tevent_req *subreq)
     ret = sdap_get_generic_recv(subreq, state, &reply_count, &reply);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "sdap_get_generic_recv failed [%d]: %s\n",
               ret, strerror(ret));
         /* We continue to finish sdap_id_op. */
     }
 
     if (reply_count == 0) {
-        DEBUG(SSSDBG_TRACE_LIBS,
+        BE_REQ_DEBUG(SSSDBG_TRACE_LIBS, req,
               "Nothing found, so no POSIX attrs can exist\n");
         state->is_gc_usable = false;
         tevent_req_done(req);
@@ -1727,7 +1727,7 @@ static void ad_check_gc_usability_search_done(struct tevent_req *subreq)
 
         ret = sysdb_attrs_get_string(reply[i], AD_AT_SCHEMA_NAME, &name);
         if (ret != EOK) {
-            DEBUG(SSSDBG_MINOR_FAILURE, "Cannot get "AD_AT_SCHEMA_NAME);
+            BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "Cannot get "AD_AT_SCHEMA_NAME);
             continue;
         }
 
@@ -1736,7 +1736,7 @@ static void ad_check_gc_usability_search_done(struct tevent_req *subreq)
         } else if (strcasecmp(name, state->sdap_opts->user_map[SDAP_AT_USER_GID].name) == 0) {
             val = &gid;
         } else {
-            DEBUG(SSSDBG_MINOR_FAILURE, "Unexpected attribute\n");
+            BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "Unexpected attribute\n");
             continue;
         }
 
@@ -1744,7 +1744,7 @@ static void ad_check_gc_usability_search_done(struct tevent_req *subreq)
                                      AD_AT_SCHEMA_IS_REPL,
                                      &is_in_partial_set);
         if (ret != EOK) {
-            DEBUG(SSSDBG_MINOR_FAILURE, "Cannot get "AD_AT_SCHEMA_IS_REPL);
+            BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "Cannot get "AD_AT_SCHEMA_IS_REPL);
             continue;
         }
 
@@ -1758,7 +1758,7 @@ static void ad_check_gc_usability_search_done(struct tevent_req *subreq)
     }
 
     if (state->is_gc_usable == true) {
-        DEBUG(SSSDBG_FUNC_DATA, "Server has POSIX attributes. Global Catalog will "
+        BE_REQ_DEBUG(SSSDBG_FUNC_DATA, req, "Server has POSIX attributes. Global Catalog will "
                                 "be used for user and group lookups. Note that if "
                                 "only a subset of POSIX attributes is present "
                                 "in GC, the non-replicated attributes are "
@@ -1811,7 +1811,7 @@ ad_subdomains_refresh_send(TALLOC_CTX *mem_ctx,
     req = tevent_req_create(mem_ctx, &state,
                             struct ad_subdomains_refresh_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -1824,7 +1824,7 @@ ad_subdomains_refresh_send(TALLOC_CTX *mem_ctx,
     state->sdap_op = sdap_id_op_create(state,
                                        sd_ctx->sdap_id_ctx->conn->conn_cache);
     if (state->sdap_op == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_id_op_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_id_op_create() failed\n");
         ret = ENOMEM;
         goto immediately;
     }
@@ -1856,7 +1856,7 @@ static errno_t ad_subdomains_refresh_retry(struct tevent_req *req)
 
     subreq = sdap_id_op_connect_send(state->sdap_op, state, &ret);
     if (subreq == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "sdap_id_op_connect_send() failed "
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "sdap_id_op_connect_send() failed "
               "[%d]: %s\n", ret, sss_strerror(ret));
         return ret;
     }
@@ -1880,10 +1880,10 @@ static void ad_subdomains_refresh_connect_done(struct tevent_req *subreq)
     talloc_zfree(subreq);
 
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Unable to connect to LDAP "
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Unable to connect to LDAP "
               "[%d]: %s\n", ret, sss_strerror(ret));
         if (dp_error == DP_ERR_OFFLINE) {
-            DEBUG(SSSDBG_MINOR_FAILURE, "No AD server is available, "
+            BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "No AD server is available, "
                   "cannot get the subdomain list while offline\n");
             ret = ERR_OFFLINE;
         }
@@ -1919,7 +1919,7 @@ static void ad_subdomains_refresh_master_done(struct tevent_req *subreq)
                               NULL, &state->forest);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Unable to get master domain information "
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Unable to get master domain information "
               "[%d]: %s\n", ret, sss_strerror(ret));
         tevent_req_error(req, ret);
         return;
@@ -1927,7 +1927,7 @@ static void ad_subdomains_refresh_master_done(struct tevent_req *subreq)
 
     realm = dp_opt_get_cstring(state->ad_options->basic, AD_KRB5_REALM);
     if (realm == NULL) {
-        DEBUG(SSSDBG_CONF_SETTINGS, "Missing realm.\n");
+        BE_REQ_DEBUG(SSSDBG_CONF_SETTINGS, req, "Missing realm.\n");
         tevent_req_error(req, EINVAL);
         return;
     }
@@ -1935,7 +1935,7 @@ static void ad_subdomains_refresh_master_done(struct tevent_req *subreq)
     ret = sysdb_master_domain_add_info(state->be_ctx->domain, realm,
                                        flat_name, master_sid, state->forest, NULL);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "Cannot save master domain info [%d]: %s\n",
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Cannot save master domain info [%d]: %s\n",
               ret, sss_strerror(ret));
         tevent_req_error(req, ret);
         return;
@@ -1971,7 +1971,7 @@ static void ad_subdomains_refresh_gc_check_done(struct tevent_req *subreq)
     ret = ad_check_gc_usability_recv(subreq, &is_gc_usable);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_MINOR_FAILURE, "Unable to get GC usability status\n");
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "Unable to get GC usability status\n");
         is_gc_usable = false;
     }
 
@@ -1987,13 +1987,13 @@ static void ad_subdomains_refresh_gc_check_done(struct tevent_req *subreq)
         if (talloc_array_length(state->sd_ctx->ad_enabled_domains) == 2) {
             if (strcasecmp(state->sd_ctx->ad_enabled_domains[0],
                            state->be_ctx->domain->name) == 0) {
-                DEBUG(SSSDBG_TRACE_FUNC,
+                BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
                       "No other enabled domain than master.\n");
 
                 ret = sysdb_list_subdomains(state, state->be_ctx->domain->sysdb,
                                             &subdoms);
                 if (ret != EOK) {
-                    DEBUG(SSSDBG_OP_FAILURE, "Unable to list subdomains "
+                    BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Unable to list subdomains "
                           "[%d]: %s\n", ret, sss_strerror(ret));
                     tevent_req_error(req, ret);
                     return;
@@ -2003,7 +2003,7 @@ static void ad_subdomains_refresh_gc_check_done(struct tevent_req *subreq)
                     ret = sysdb_subdomain_delete(state->be_ctx->domain->sysdb,
                                                  subdoms[i]);
                     if (ret != EOK) {
-                        DEBUG(SSSDBG_OP_FAILURE, "Unable to remove subdomain "
+                        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Unable to remove subdomain "
                               "[%d]: %s\n", ret, sss_strerror(ret));
                         tevent_req_error(req, ret);
                         return;
@@ -2018,7 +2018,7 @@ static void ad_subdomains_refresh_gc_check_done(struct tevent_req *subreq)
 
     ad_domain = dp_opt_get_cstring(state->ad_options->basic, AD_DOMAIN);
     if (ad_domain == NULL) {
-        DEBUG(SSSDBG_CONF_SETTINGS,
+        BE_REQ_DEBUG(SSSDBG_CONF_SETTINGS, req,
              "Missing AD domain name, falling back to sssd domain name\n");
         ad_domain = state->sd_ctx->be_ctx->domain->name;
     }
@@ -2053,7 +2053,7 @@ static void ad_subdomains_refresh_root_done(struct tevent_req *subreq)
     ret = ad_get_root_domain_recv(state, subreq, &root_attrs, &root_id_ctx);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Unable to get forest root [%d]: %s\n",
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Unable to get forest root [%d]: %s\n",
               ret, sss_strerror(ret));
         root_attrs = NULL;
         root_id_ctx = NULL;
@@ -2099,18 +2099,18 @@ static void ad_subdomains_refresh_done(struct tevent_req *subreq)
     ret = ad_get_slave_domain_recv(subreq);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "Unable to get subdomains [%d]: %s\n",
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Unable to get subdomains [%d]: %s\n",
               ret, sss_strerror(ret));
     }
 
     if (ret != EOK) {
-        DEBUG(SSSDBG_TRACE_FUNC, "Unable to refresh subdomains [%d]: %s\n",
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Unable to refresh subdomains [%d]: %s\n",
               ret, sss_strerror(ret));
         tevent_req_error(req, ret);
         return;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "Subdomains refreshed.\n");
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Subdomains refreshed.\n");
     tevent_req_done(req);
 }
 
@@ -2141,13 +2141,13 @@ ad_subdomains_handler_send(TALLOC_CTX *mem_ctx,
     req = tevent_req_create(mem_ctx, &state,
                             struct ad_subdomains_handler_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
         return NULL;
     }
 
 
     if (sd_ctx->last_refreshed > time(NULL) - AD_SUBDOMAIN_REFRESH_LIMIT) {
-        DEBUG(SSSDBG_TRACE_FUNC, "Subdomains were recently refreshed, "
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Subdomains were recently refreshed, "
               "nothing to do\n");
         ret = EOK;
         goto immediately;
@@ -2348,7 +2348,7 @@ ad_check_domain_send(TALLOC_CTX *mem_ctx,
 
     req = tevent_req_create(mem_ctx, &state, struct ad_check_domain_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "tevent_req_create failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "tevent_req_create failed.\n");
         return NULL;
     }
 
@@ -2364,7 +2364,7 @@ ad_check_domain_send(TALLOC_CTX *mem_ctx,
         state->parent = find_domain_by_name(be_ctx->domain, parent_dom_name,
                                             true);
         if (state->parent == NULL) {
-            DEBUG(SSSDBG_OP_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
                   "Failed to find domain object for domain [%s].\n",
                   parent_dom_name);
             ret = ENOENT;
@@ -2376,7 +2376,7 @@ ad_check_domain_send(TALLOC_CTX *mem_ctx,
                                    state->parent->forest,
                                    NULL, 0, be_ctx->cdb, true);
         if (state->dom == NULL) {
-            DEBUG(SSSDBG_OP_FAILURE, "new_subdomain() failed.\n");
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "new_subdomain() failed.\n");
             ret = EINVAL;
             goto immediately;
         }
@@ -2388,13 +2388,13 @@ ad_check_domain_send(TALLOC_CTX *mem_ctx,
 
         ret = sdap_domain_add(state->opts, state->dom, &state->sdom);
         if (ret != EOK) {
-            DEBUG(SSSDBG_OP_FAILURE, "sdap_domain_subdom_add failed.\n");
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_domain_subdom_add failed.\n");
             goto immediately;
         }
 
         ret = ad_set_search_bases(ad_id_ctx->ad_options->id, state->sdom);
         if (ret != EOK) {
-            DEBUG(SSSDBG_MINOR_FAILURE, "failed to set ldap search bases for "
+            BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "failed to set ldap search bases for "
                   "domain '%s'. Will try to use automatically detected search "
                   "bases.", state->sdom->dom->name);
         }
@@ -2404,7 +2404,7 @@ ad_check_domain_send(TALLOC_CTX *mem_ctx,
     state->dom_id_ctx = ads_get_dom_id_ctx(be_ctx, ad_id_ctx, state->dom,
                                            state->opts);
     if (state->dom_id_ctx == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "ads_get_dom_id_ctx() failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "ads_get_dom_id_ctx() failed.\n");
         ret = EINVAL;
         goto immediately;
     }
@@ -2412,14 +2412,14 @@ ad_check_domain_send(TALLOC_CTX *mem_ctx,
     state->sdap_op = sdap_id_op_create(state,
                              state->dom_id_ctx->sdap_id_ctx->conn->conn_cache);
     if (state->sdap_op == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_id_op_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_id_op_create() failed\n");
          ret = ENOMEM;
          goto immediately;
     }
 
     subreq = sdap_id_op_connect_send(state->sdap_op, state, &ret);
     if (subreq == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "sdap_id_op_connect_send() failed "
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "sdap_id_op_connect_send() failed "
               "[%d]: %s\n", ret, sss_strerror(ret));
          goto immediately;
     }
@@ -2453,10 +2453,10 @@ static void ad_check_domain_connect_done(struct tevent_req *subreq)
     talloc_zfree(subreq);
 
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Unable to connect to LDAP "
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Unable to connect to LDAP "
               "[%d]: %s\n", ret, sss_strerror(ret));
         if (dp_error == DP_ERR_OFFLINE) {
-            DEBUG(SSSDBG_MINOR_FAILURE, "No AD server is available, "
+            BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "No AD server is available, "
                   "cannot get the subdomain list while offline\n");
             ret = ERR_OFFLINE;
         }
@@ -2487,11 +2487,11 @@ static void ad_check_domain_done(struct tevent_req *subreq)
                               &state->site, &state->forest);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "Unable to lookup domain information "
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Unable to lookup domain information "
               "[%d]: %s\n", ret, sss_strerror(ret));
         goto done;
     }
-    DEBUG(SSSDBG_TRACE_ALL, "%s %s %s %s.\n", state->flat, state->sid,
+    BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req, "%s %s %s %s.\n", state->flat, state->sid,
                                               state->site, state->forest);
 
     /* New domain was successfully checked, remove destructor. */
