@@ -247,7 +247,7 @@ ad_resolver_enumeration_send(TALLOC_CTX *mem_ctx,
 
     ctx = talloc_get_type(pvt, struct ad_resolver_ctx);
     if (ctx == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Cannot retrieve ad_resolver_ctx!\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Cannot retrieve ad_resolver_ctx!\n");
         ret = EFAULT;
         goto fail;
     }
@@ -261,21 +261,21 @@ ad_resolver_enumeration_send(TALLOC_CTX *mem_ctx,
     state->realm = dp_opt_get_cstring(ctx->ad_id_ctx->ad_options->basic,
                                       AD_KRB5_REALM);
     if (state->realm == NULL) {
-        DEBUG(SSSDBG_CONF_SETTINGS, "Missing realm\n");
+        BE_REQ_DEBUG(SSSDBG_CONF_SETTINGS, req, "Missing realm\n");
         ret = EINVAL;
         goto fail;
     }
 
     state->sdap_op = sdap_id_op_create(state, sdap_id_ctx->conn->conn_cache);
     if (state->sdap_op == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_id_op_create failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_id_op_create failed.\n");
         ret = ENOMEM;
         goto fail;
     }
 
     subreq = sdap_id_op_connect_send(state->sdap_op, state, &ret);
     if (subreq == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_id_op_connect_send failed: %d(%s).\n",
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_id_op_connect_send failed: %d(%s).\n",
                                   ret, strerror(ret));
         goto fail;
     }
@@ -305,11 +305,11 @@ ad_resolver_enumeration_conn_done(struct tevent_req *subreq)
     talloc_zfree(subreq);
     if (ret != EOK) {
         if (dp_error == DP_ERR_OFFLINE) {
-            DEBUG(SSSDBG_TRACE_FUNC,
+            BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
                   "Backend is marked offline, retry later!\n");
             tevent_req_done(req);
         } else {
-            DEBUG(SSSDBG_MINOR_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
                   "Domain enumeration failed to connect to " \
                    "LDAP server: (%d)[%s]\n", ret, strerror(ret));
             tevent_req_error(req, ret);
@@ -320,7 +320,7 @@ ad_resolver_enumeration_conn_done(struct tevent_req *subreq)
     subreq = ad_domain_info_send(state, state->ev, id_ctx->conn,
                                  state->sdap_op, state->sdom->dom->name);
     if (subreq == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "ad_domain_info_send failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "ad_domain_info_send failed.\n");
         tevent_req_error(req, ret);
         return;
     }
@@ -350,7 +350,7 @@ ad_resolver_enumeration_master_done(struct tevent_req *subreq)
                                 &flat_name, &master_sid, NULL, &forest);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "Cannot retrieve master domain info\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Cannot retrieve master domain info\n");
         tevent_req_error(req, ret);
         return;
     }
@@ -358,14 +358,14 @@ ad_resolver_enumeration_master_done(struct tevent_req *subreq)
     ret = sysdb_master_domain_add_info(state->sdom->dom, state->realm,
                                        flat_name, master_sid, forest, NULL);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "Cannot save master domain info\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Cannot save master domain info\n");
         tevent_req_error(req, ret);
         return;
     }
 
     ad_id_ctx = talloc_get_type(state->sdom->pvt, struct ad_id_ctx);
     if (ad_id_ctx == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Cannot retrieve ad_id_ctx!\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Cannot retrieve ad_id_ctx!\n");
         tevent_req_error(req, EINVAL);
         return;
     }
@@ -374,7 +374,7 @@ ad_resolver_enumeration_master_done(struct tevent_req *subreq)
                                 state->resolver_ctx->sdap_resolver_ctx,
                                 ad_id_ctx);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
                 "Could not enumerate domain %s\n", state->sdom->dom->name);
         tevent_req_error(req, ret);
         return;
@@ -404,7 +404,7 @@ ad_resolver_enum_sdom(struct tevent_req *req,
     if (subreq == NULL) {
         /* The ptask API will reschedule the enumeration on its own on
          * failure */
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Failed to schedule enumeration, retrying later!\n");
         return ENOMEM;
     }
@@ -425,7 +425,7 @@ ad_resolver_enum_sdom_done(struct tevent_req *subreq)
     ret = sdap_dom_resolver_enum_recv(subreq);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Could not enumerate domain %s\n", state->sditer->dom->name);
         tevent_req_error(req, ret);
         return;
@@ -441,7 +441,7 @@ ad_resolver_enum_sdom_done(struct tevent_req *subreq)
 
         ad_id_ctx = talloc_get_type(state->sditer->pvt, struct ad_id_ctx);
         if (ad_id_ctx == NULL) {
-            DEBUG(SSSDBG_CRIT_FAILURE, "Cannot retrieve ad_id_ctx!\n");
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Cannot retrieve ad_id_ctx!\n");
             tevent_req_error(req, EINVAL);
             return;
         }
@@ -450,7 +450,7 @@ ad_resolver_enum_sdom_done(struct tevent_req *subreq)
                                     state->resolver_ctx->sdap_resolver_ctx,
                                     ad_id_ctx);
         if (ret != EOK) {
-            DEBUG(SSSDBG_OP_FAILURE, "Could not enumerate domain %s\n",
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Could not enumerate domain %s\n",
                   state->sditer->dom->name);
             tevent_req_error(req, ret);
             return;

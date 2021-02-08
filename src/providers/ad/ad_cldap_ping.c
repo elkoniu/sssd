@@ -66,7 +66,7 @@ static struct tevent_req *ad_cldap_ping_dc_send(TALLOC_CTX *mem_ctx,
     req = tevent_req_create(mem_ctx, &state,
                             struct ad_cldap_ping_dc_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -163,13 +163,13 @@ static void ad_cldap_ping_dc_done(struct tevent_req *subreq)
     talloc_zfree(state->sh);
 
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "%s:%d: unable to get netlogon information\n",
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "%s:%d: unable to get netlogon information\n",
               state->dc->host, state->dc->port);
         goto done;
     }
 
     if (reply_count == 0) {
-        DEBUG(SSSDBG_OP_FAILURE, "%s:%d: no netlogon information available\n",
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "%s:%d: no netlogon information available\n",
               state->dc->host, state->dc->port);
         ret = ENOENT;
         goto done;
@@ -178,14 +178,14 @@ static void ad_cldap_ping_dc_done(struct tevent_req *subreq)
     ret = netlogon_get_domain_info(state, reply[0], true, NULL, &state->site,
                                    &state->forest);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "%s:%d: unable to retrieve site name [%d]: %s\n",
               state->dc->host, state->dc->port, ret, sss_strerror(ret));
         ret = ENOENT;
         goto done;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "%s:%d: found site (%s) and forest (%s)\n",
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "%s:%d: found site (%s) and forest (%s)\n",
           state->dc->host, state->dc->port, state->site, state->forest);
 
     ret = EOK;
@@ -258,7 +258,7 @@ ad_cldap_ping_parallel_send(TALLOC_CTX *mem_ctx,
     req = tevent_req_create(mem_ctx, &state,
                             struct ad_cldap_ping_parallel_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -327,7 +327,7 @@ static void ad_cldap_ping_parallel_batch(struct tevent_context *ev,
     }
 
     for (i = state->next_dc; i < limit; i++) {
-        DEBUG(SSSDBG_TRACE_ALL, "Batch %d: %s:%d\n", state->batch,
+        BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req, "Batch %d: %s:%d\n", state->batch,
               state->dc_list[i].host, state->dc_list[i].port);
     }
 
@@ -337,7 +337,7 @@ static void ad_cldap_ping_parallel_batch(struct tevent_context *ev,
                                        &state->dc_list[state->next_dc],
                                        state->ad_domain);
         if (subreq == NULL) {
-            DEBUG(SSSDBG_OP_FAILURE, "Unable to create new ping request\n");
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Unable to create new ping request\n");
             goto fail;
         }
 
@@ -351,7 +351,7 @@ static void ad_cldap_ping_parallel_batch(struct tevent_context *ev,
         state->te = tevent_add_timer(ev, state->reqs_ctx, tv,
                                      ad_cldap_ping_parallel_batch, req);
         if (state->te == NULL) {
-            DEBUG(SSSDBG_OP_FAILURE, "Unable to schedule next batch!\n");
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Unable to schedule next batch!\n");
             goto fail;
         }
     }
@@ -448,7 +448,7 @@ ad_cldap_ping_domain_send(TALLOC_CTX *mem_ctx,
 
     req = tevent_req_create(mem_ctx, &state, struct ad_cldap_ping_domain_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -467,7 +467,7 @@ ad_cldap_ping_domain_send(TALLOC_CTX *mem_ctx,
     domains[0] = discovery_domain;
     domains[1] = NULL;
     if (domains[0] == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Bad argument (discovery_domain)");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Bad argument (discovery_domain)");
         ret = ENOMEM;
         goto done;
     }
@@ -510,7 +510,7 @@ static void ad_cldap_ping_domain_discovery_done(struct tevent_req *subreq)
         goto done;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "Found %zu domain controllers in domain %s\n",
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Found %zu domain controllers in domain %s\n",
           state->dc_count, domain);
 
     subreq = ad_cldap_ping_parallel_send(state, state->ev, state->opts,
@@ -596,7 +596,7 @@ struct tevent_req *ad_cldap_ping_send(TALLOC_CTX *mem_ctx,
 
     req = tevent_req_create(mem_ctx, &state, struct ad_cldap_ping_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -605,13 +605,13 @@ struct tevent_req *ad_cldap_ping_send(TALLOC_CTX *mem_ctx,
         state->forest = talloc_strdup(state, srv_ctx->current_forest);
         if ((srv_ctx->current_site != NULL && state->site == NULL)
                 || (srv_ctx->current_forest != NULL && state->forest == NULL)) {
-            DEBUG(SSSDBG_OP_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
                   "Failed to copy current site or forest name.\n");
             ret = ENOMEM;
             goto done;
         }
 
-        DEBUG(SSSDBG_TRACE_FUNC,
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
               "CLDAP ping is not necessary, using site '%s' and forest '%s'\n",
               state->site != NULL ? state->site : "unknown",
               state->forest != NULL ? state->forest : "unknown");
@@ -619,7 +619,7 @@ struct tevent_req *ad_cldap_ping_send(TALLOC_CTX *mem_ctx,
         goto done;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "Sending CLDAP ping\n");
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Sending CLDAP ping\n");
 
     state->ev = ev;
     state->opts = srv_ctx->opts;
@@ -634,7 +634,7 @@ struct tevent_req *ad_cldap_ping_send(TALLOC_CTX *mem_ctx,
         domain = ad_site_dns_discovery_domain(state, srv_ctx->current_site,
                                               discovery_domain);
         if (domain == NULL) {
-            DEBUG(SSSDBG_CRIT_FAILURE, "Out of memory!");
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Out of memory!");
             ret = ENOMEM;
             goto done;
         }
@@ -675,7 +675,7 @@ static errno_t ad_cldap_ping_step(struct tevent_req *req,
                                        state->be_res, state->host_db,
                                        state->ad_domain, domain);
     if (subreq == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Out of memory!");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Out of memory!");
         return ENOMEM;
     }
 
@@ -704,8 +704,8 @@ static void ad_cldap_ping_done(struct tevent_req *subreq)
                                     &state->forest);
     talloc_zfree(subreq);
     if (ret == EOK) {
-        DEBUG(SSSDBG_TRACE_FUNC, "Found site: %s\n", state->site);
-        DEBUG(SSSDBG_TRACE_FUNC, "Found forest: %s\n", state->forest);
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Found site: %s\n", state->site);
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Found forest: %s\n", state->forest);
         tevent_req_done(req);
         return;
     }
@@ -718,7 +718,7 @@ static void ad_cldap_ping_done(struct tevent_req *subreq)
         }
     }
 
-    DEBUG(SSSDBG_OP_FAILURE,
+    BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
           "Unable to get site and forest information [%d]: %s\n",
           ret, sss_strerror(ret));
 
