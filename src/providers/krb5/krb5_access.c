@@ -67,18 +67,18 @@ struct tevent_req *krb5_access_send(TALLOC_CTX *mem_ctx,
 
     ret = get_domain_or_subdomain(be_ctx, pd->domain, &dom);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "get_domain_or_subdomain failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "get_domain_or_subdomain failed.\n");
         goto done;
     }
 
     ret = krb5_setup(state, pd, dom, krb5_ctx, &state->kr);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "krb5_setup failed.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "krb5_setup failed.\n");
         goto done;
     }
 
     if (pd->cmd != SSS_PAM_ACCT_MGMT) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "Unexpected pam task %d.\n", pd->cmd);
         ret = EINVAL;
         goto done;
@@ -86,7 +86,7 @@ struct tevent_req *krb5_access_send(TALLOC_CTX *mem_ctx,
 
     attrs = talloc_array(state, const char *, 5);
     if (attrs == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "talloc_array failed.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "talloc_array failed.\n");
         ret = ENOMEM;
         goto done;
     }
@@ -100,14 +100,14 @@ struct tevent_req *krb5_access_send(TALLOC_CTX *mem_ctx,
     ret = sysdb_get_user_attr(state, be_ctx->domain, state->pd->user, attrs,
                               &res);
     if (ret) {
-        DEBUG(SSSDBG_FUNC_DATA,
+        BE_REQ_DEBUG(SSSDBG_FUNC_DATA, req,
               "sysdb search for upn of user [%s] failed.\n", pd->user);
         goto done;
     }
 
     switch (res->count) {
     case 0:
-        DEBUG(SSSDBG_FUNC_DATA,
+        BE_REQ_DEBUG(SSSDBG_FUNC_DATA, req,
               "No attributes for user [%s] found.\n", pd->user);
         ret = ENOENT;
         goto done;
@@ -116,14 +116,14 @@ struct tevent_req *krb5_access_send(TALLOC_CTX *mem_ctx,
         ret = find_or_guess_upn(state, res->msgs[0], krb5_ctx, be_ctx->domain,
                                 state->kr->user, pd->domain, &state->kr->upn);
         if (ret != EOK) {
-            DEBUG(SSSDBG_OP_FAILURE, "find_or_guess_upn failed.\n");
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "find_or_guess_upn failed.\n");
             goto done;
         }
 
         state->kr->uid = ldb_msg_find_attr_as_uint64(res->msgs[0], SYSDB_UIDNUM,
                                                      0);
         if (state->kr->uid == 0) {
-            DEBUG(SSSDBG_CONF_SETTINGS,
+            BE_REQ_DEBUG(SSSDBG_CONF_SETTINGS, req,
                   "UID for user [%s] not known.\n", pd->user);
             ret = ENOENT;
             goto done;
@@ -132,7 +132,7 @@ struct tevent_req *krb5_access_send(TALLOC_CTX *mem_ctx,
         state->kr->gid = ldb_msg_find_attr_as_uint64(res->msgs[0], SYSDB_GIDNUM,
                                                      0);
         if (state->kr->gid == 0) {
-            DEBUG(SSSDBG_CONF_SETTINGS,
+            BE_REQ_DEBUG(SSSDBG_CONF_SETTINGS, req,
                   "GID for user [%s] not known.\n", pd->user);
             ret = ENOENT;
             goto done;
@@ -140,7 +140,7 @@ struct tevent_req *krb5_access_send(TALLOC_CTX *mem_ctx,
 
         break;
     default:
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "User search for [%s] returned > 1 results!\n", pd->user);
         ret = EINVAL;
         goto done;
@@ -149,7 +149,7 @@ struct tevent_req *krb5_access_send(TALLOC_CTX *mem_ctx,
 
     subreq = handle_child_send(state, state->ev, state->kr);
     if (subreq == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "handle_child_send failed.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "handle_child_send failed.\n");
         ret = ENOMEM;
         goto done;
     }
@@ -180,13 +180,13 @@ static void krb5_access_done(struct tevent_req *subreq)
     ret = handle_child_recv(subreq, state, &buf, &len);
     talloc_free(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "child failed [%d][%s].\n", ret, strerror(ret));
         goto fail;
     }
 
     if ((size_t) len != sizeof(int32_t)) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "message has the wrong size.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "message has the wrong size.\n");
         ret = EINVAL;
         goto fail;
     }

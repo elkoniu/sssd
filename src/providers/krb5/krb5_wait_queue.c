@@ -76,7 +76,7 @@ static void wait_queue_auth_done(struct tevent_req *req)
     ret = krb5_auth_recv(req, &pam_status, &dp_err);
     talloc_zfree(req);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "krb5_auth_recv failed: %d\n", ret);
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "krb5_auth_recv failed: %d\n", ret);
     }
 
     krb5_auth_queue_finish(parent_req, ret, pam_status, dp_err);
@@ -262,7 +262,7 @@ struct tevent_req *krb5_auth_queue_send(TALLOC_CTX *mem_ctx,
 
     req = tevent_req_create(mem_ctx, &state, struct krb5_auth_queue_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create failed.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create failed.\n");
         return NULL;
     }
     state->krb5_ctx = krb5_ctx;
@@ -270,23 +270,23 @@ struct tevent_req *krb5_auth_queue_send(TALLOC_CTX *mem_ctx,
 
     ret = add_to_wait_queue(be_ctx, req, pd, krb5_ctx);
     if (ret == EOK) {
-        DEBUG(SSSDBG_TRACE_LIBS,
+        BE_REQ_DEBUG(SSSDBG_TRACE_LIBS, req,
               "Request [%p] successfully added to wait queue "
               "of user [%s].\n", req, pd->user);
         ret = EOK;
         goto immediate;
     } else if (ret == ENOENT) {
-        DEBUG(SSSDBG_TRACE_LIBS, "Wait queue of user [%s] is empty, "
+        BE_REQ_DEBUG(SSSDBG_TRACE_LIBS, req, "Wait queue of user [%s] is empty, "
               "running request [%p] immediately.\n", pd->user, req);
     } else {
-        DEBUG(SSSDBG_MINOR_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
               "Failed to add request to wait queue of user [%s], "
               "running request [%p] immediately.\n", pd->user, req);
     }
 
     subreq = krb5_auth_send(req, ev, be_ctx, pd, krb5_ctx);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "krb5_auth_send failed.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "krb5_auth_send failed.\n");
         ret = ENOMEM;
         goto immediate;
     }
@@ -317,12 +317,12 @@ static void krb5_auth_queue_done(struct tevent_req *subreq)
     check_wait_queue(state->krb5_ctx, state->pd->user);
 
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "krb5_auth_recv failed with: %d\n", ret);
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "krb5_auth_recv failed with: %d\n", ret);
         tevent_req_error(req, ret);
         return;
     }
 
-    DEBUG(SSSDBG_TRACE_LIBS, "krb5_auth_queue request [%p] done.\n", req);
+    BE_REQ_DEBUG(SSSDBG_TRACE_LIBS, req, "krb5_auth_queue request [%p] done.\n", req);
     tevent_req_done(req);
 }
 
@@ -346,7 +346,7 @@ static void krb5_auth_queue_finish(struct tevent_req *req,
     if (ret != EOK) {
         tevent_req_error(req, ret);
     } else {
-        DEBUG(SSSDBG_TRACE_LIBS, "krb5_auth_queue request [%p] done.\n", req);
+        BE_REQ_DEBUG(SSSDBG_TRACE_LIBS, req, "krb5_auth_queue request [%p] done.\n", req);
         tevent_req_done(req);
     }
 }
