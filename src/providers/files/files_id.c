@@ -43,7 +43,7 @@ files_account_info_handler_send(TALLOC_CTX *mem_ctx,
     req = tevent_req_create(mem_ctx, &state,
                             struct files_account_info_handler_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
         return NULL;
     }
     state->id_ctx = id_ctx;
@@ -51,7 +51,7 @@ files_account_info_handler_send(TALLOC_CTX *mem_ctx,
     switch (data->entry_type & BE_REQ_TYPE_MASK) {
     case BE_REQ_USER:
         if (data->filter_type != BE_FILTER_ENUM) {
-            DEBUG(SSSDBG_CRIT_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
                   "Unexpected user filter type: %d\n", data->filter_type);
             ret = EINVAL;
             goto immediate;
@@ -61,7 +61,7 @@ files_account_info_handler_send(TALLOC_CTX *mem_ctx,
         break;
     case BE_REQ_GROUP:
         if (data->filter_type != BE_FILTER_ENUM) {
-            DEBUG(SSSDBG_CRIT_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
                   "Unexpected group filter type: %d\n", data->filter_type);
             ret = EINVAL;
             goto immediate;
@@ -71,13 +71,13 @@ files_account_info_handler_send(TALLOC_CTX *mem_ctx,
         break;
     case BE_REQ_INITGROUPS:
         if (data->filter_type != BE_FILTER_NAME) {
-            DEBUG(SSSDBG_CRIT_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
                   "Unexpected initgr filter type: %d\n", data->filter_type);
             ret = EINVAL;
             goto immediate;
         }
         if (strcmp(data->filter_value, DP_REQ_OPT_FILES_INITGR) != 0) {
-            DEBUG(SSSDBG_CRIT_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
                   "Unexpected initgr filter value: %d\n", data->filter_type);
             ret = EINVAL;
             goto immediate;
@@ -89,39 +89,39 @@ files_account_info_handler_send(TALLOC_CTX *mem_ctx,
         break;
     case BE_REQ_BY_CERT:
         if (data->filter_type != BE_FILTER_CERT) {
-            DEBUG(SSSDBG_CRIT_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
                   "Unexpected filter type for lookup by cert: %d\n",
                   data->filter_type);
             ret = EINVAL;
             goto immediate;
         }
         if (id_ctx->sss_certmap_ctx == NULL) {
-            DEBUG(SSSDBG_TRACE_ALL, "Certificate mapping not configured.\n");
+            BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req, "Certificate mapping not configured.\n");
             ret = EOK;
             goto immediate;
         }
 
         ret = files_map_cert_to_user(id_ctx, data);
         if (ret != EOK) {
-            DEBUG(SSSDBG_OP_FAILURE, "files_map_cert_to_user failed\n");
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "files_map_cert_to_user failed\n");
         }
         goto immediate;
         break;
     default:
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "Unexpected entry type: %d\n", data->entry_type & BE_REQ_TYPE_MASK);
         ret = EINVAL;
         goto immediate;
     }
 
     if (needs_update == false) {
-        DEBUG(SSSDBG_TRACE_LIBS, "The files domain no longer needs an update\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_LIBS, req, "The files domain no longer needs an update\n");
         ret = EOK;
         goto immediate;
     }
 
     if (*update_req != NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "BUG: Received a concurrent update!\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "BUG: Received a concurrent update!\n");
         ret = EAGAIN;
         goto immediate;
     }
