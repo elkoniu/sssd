@@ -123,14 +123,14 @@ static void authenticate_user_done(struct tevent_req *req)
     ret = krb5_auth_queue_recv(req, &pam_status, &dp_err);
     talloc_free(req);
     if (ret) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "krb5_auth request failed.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "krb5_auth request failed.\n");
     } else {
         if (pam_status == PAM_SUCCESS) {
-            DEBUG(SSSDBG_CONF_SETTINGS,
+            BE_REQ_DEBUG(SSSDBG_CONF_SETTINGS, req,
                   "Successfully authenticated user [%s].\n",
                       auth_data->pd->user);
         } else {
-            DEBUG(SSSDBG_CRIT_FAILURE, "Failed to authenticate user [%s].\n",
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Failed to authenticate user [%s].\n",
                       auth_data->pd->user);
         }
     }
