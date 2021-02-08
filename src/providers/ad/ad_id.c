@@ -150,7 +150,7 @@ ad_handle_acct_info_send(TALLOC_CTX *mem_ctx,
                                        ar->filter_type,
                                        ar->filter_value);
     if (shortcut) {
-        DEBUG(SSSDBG_TRACE_FUNC, "This ID is from different domain\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "This ID is from different domain\n");
         ret = EOK;
         goto immediate;
     }
@@ -212,7 +212,7 @@ ad_handle_acct_info_step(struct tevent_req *req)
                                                noexist_delete,
                                                msg);
             if (subreq == NULL) {
-                DEBUG(SSSDBG_OP_FAILURE, "ad_handle_pac_initgr_send failed.\n");
+                BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "ad_handle_pac_initgr_send failed.\n");
                 return ENOMEM;
             }
 
@@ -385,7 +385,7 @@ ad_account_info_send(TALLOC_CTX *mem_ctx,
     req = tevent_req_create(mem_ctx, &state,
                             struct ad_account_info_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -398,7 +398,7 @@ ad_account_info_send(TALLOC_CTX *mem_ctx,
     }
 
     if (domain == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Unknown domain\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Unknown domain\n");
         ret = EINVAL;
         goto immediately;
     }
@@ -406,7 +406,7 @@ ad_account_info_send(TALLOC_CTX *mem_ctx,
     /* Determine whether to connect to GC, LDAP or try both. */
     clist = get_conn_list(state, id_ctx, domain, data);
     if (clist == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Cannot create conn list\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Cannot create conn list\n");
         ret = EIO;
         goto immediately;
     }
@@ -443,7 +443,7 @@ static void ad_account_info_done(struct tevent_req *subreq)
 
     ret = ad_handle_acct_info_recv(subreq, &state->dp_error, &state->err_msg);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "ad_handle_acct_info_recv failed [%d]: %s\n",
               ret, sss_strerror(ret));
         /* The caller wouldn't fail either, just report the error up */
@@ -496,12 +496,12 @@ ad_account_info_handler_send(TALLOC_CTX *mem_ctx,
     req = tevent_req_create(mem_ctx, &state,
                             struct ad_account_info_handler_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
         return NULL;
     }
 
     if (sdap_is_enum_request(data)) {
-        DEBUG(SSSDBG_TRACE_LIBS, "Skipping enumeration on demand\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_LIBS, req, "Skipping enumeration on demand\n");
         ret = EOK;
         goto immediately;
     }
@@ -595,7 +595,7 @@ ad_id_enumeration_send(TALLOC_CTX *mem_ctx,
 
     ectx = talloc_get_type(pvt, struct ldap_enum_ctx);
     if (ectx == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Cannot retrieve ldap_enum_ctx!\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Cannot retrieve ldap_enum_ctx!\n");
         ret = EFAULT;
         goto fail;
     }
@@ -609,7 +609,7 @@ ad_id_enumeration_send(TALLOC_CTX *mem_ctx,
     state->realm = dp_opt_get_cstring(state->id_ctx->ad_options->basic,
                                       AD_KRB5_REALM);
     if (state->realm == NULL) {
-        DEBUG(SSSDBG_CONF_SETTINGS, "Missing realm\n");
+        BE_REQ_DEBUG(SSSDBG_CONF_SETTINGS, req, "Missing realm\n");
         ret = EINVAL;
         goto fail;
     }
@@ -617,14 +617,14 @@ ad_id_enumeration_send(TALLOC_CTX *mem_ctx,
     state->sdap_op = sdap_id_op_create(state,
                                        state->id_ctx->ldap_ctx->conn_cache);
     if (state->sdap_op == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_id_op_create failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_id_op_create failed.\n");
         ret = ENOMEM;
         goto fail;
     }
 
     subreq = sdap_id_op_connect_send(state->sdap_op, state, &ret);
     if (subreq == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_id_op_connect_send failed: %d(%s).\n",
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_id_op_connect_send failed: %d(%s).\n",
                                   ret, strerror(ret));
         goto fail;
     }
@@ -651,11 +651,11 @@ ad_enumeration_conn_done(struct tevent_req *subreq)
     talloc_zfree(subreq);
     if (ret != EOK) {
         if (dp_error == DP_ERR_OFFLINE) {
-            DEBUG(SSSDBG_TRACE_FUNC,
+            BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
                   "Backend is marked offline, retry later!\n");
             tevent_req_done(req);
         } else {
-            DEBUG(SSSDBG_MINOR_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
                   "Domain enumeration failed to connect to " \
                    "LDAP server: (%d)[%s]\n", ret, strerror(ret));
             tevent_req_error(req, ret);
@@ -668,7 +668,7 @@ ad_enumeration_conn_done(struct tevent_req *subreq)
                                   state->sdap_op,
                                   state->sdom->dom->name);
     if (subreq == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "ad_domain_info_send failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "ad_domain_info_send failed.\n");
         tevent_req_error(req, ret);
         return;
     }
@@ -691,7 +691,7 @@ ad_enumeration_master_done(struct tevent_req *subreq)
                               &flat_name, &master_sid, NULL, &forest);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "Cannot retrieve master domain info\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Cannot retrieve master domain info\n");
         tevent_req_error(req, ret);
         return;
     }
@@ -699,14 +699,14 @@ ad_enumeration_master_done(struct tevent_req *subreq)
     ret = sysdb_master_domain_add_info(state->sdom->dom, state->realm,
                                        flat_name, master_sid, forest, NULL);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "Cannot save master domain info\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Cannot save master domain info\n");
         tevent_req_error(req, ret);
         return;
     }
 
     ret = ad_enum_sdom(req, state->sdom, state->id_ctx);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
                 "Could not enumerate domain %s\n", state->sdom->dom->name);
         tevent_req_error(req, ret);
         return;
@@ -743,7 +743,7 @@ ad_enum_sdom(struct tevent_req *req,
     if (subreq == NULL) {
         /* The ptask API will reschedule the enumeration on its own on
          * failure */
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Failed to schedule enumeration, retrying later!\n");
         return ENOMEM;
     }
@@ -767,7 +767,7 @@ ad_enumeration_done(struct tevent_req *subreq)
     ret = sdap_dom_enum_ex_recv(subreq);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Could not enumerate domain %s\n", state->sditer->dom->name);
         tevent_req_error(req, ret);
         return;
@@ -781,7 +781,7 @@ ad_enumeration_done(struct tevent_req *subreq)
     if (state->sditer != NULL) {
         ret = ad_enum_sdom(req, state->sditer, state->sditer->pvt);
         if (ret != EOK) {
-            DEBUG(SSSDBG_OP_FAILURE, "Could not enumerate domain %s\n",
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Could not enumerate domain %s\n",
                   state->sditer->dom->name);
             tevent_req_error(req, ret);
             return;
@@ -804,7 +804,7 @@ ad_enumeration_done(struct tevent_req *subreq)
             ret = ad_enum_cross_dom_members(state->id_ctx->ad_options->id,
                                             state->sditer->dom);
             if (ret != EOK) {
-                DEBUG(SSSDBG_MINOR_FAILURE, "Could not check cross-domain "
+                BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "Could not check cross-domain "
                       "memberships for %s, group memberships might be "
                       "incomplete!\n", state->sdom->dom->name);
                 continue;
@@ -1164,7 +1164,7 @@ ad_get_account_domain_send(TALLOC_CTX *mem_ctx,
     req = tevent_req_create(mem_ctx, &state,
                             struct ad_get_account_domain_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
         return NULL;
     }
     state->ev = params->ev;
@@ -1190,7 +1190,7 @@ ad_get_account_domain_send(TALLOC_CTX *mem_ctx,
 
     /* The get-account-domain request only works with GC */
     if (dp_opt_get_bool(id_ctx->ad_options->basic, AD_ENABLE_GC) == false) {
-        DEBUG(SSSDBG_CONF_SETTINGS,
+        BE_REQ_DEBUG(SSSDBG_CONF_SETTINGS, req,
               "Global catalog support is not enabled, "
               "cannot locate the account domain\n");
         ret = ERR_GET_ACCT_DOM_NOT_SUPPORTED;
@@ -1200,7 +1200,7 @@ ad_get_account_domain_send(TALLOC_CTX *mem_ctx,
     state->sdom = sdap_domain_get(id_ctx->sdap_id_ctx->opts,
                                   params->be_ctx->domain);
     if (state->sdom == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Cannot find sdap_domain\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Cannot find sdap_domain\n");
         ret = EIO;
         goto immediately;
     }
@@ -1214,7 +1214,7 @@ ad_get_account_domain_send(TALLOC_CTX *mem_ctx,
                                         state->sdom->dom->name,
                                         state->sdom->dom->domain_id);
     if (use_id_mapping == true) {
-        DEBUG(SSSDBG_CONF_SETTINGS,
+        BE_REQ_DEBUG(SSSDBG_CONF_SETTINGS, req,
               "No point in locating domain with GC if ID-mapping "
               "is enabled\n");
         ret = ERR_GET_ACCT_DOM_NOT_SUPPORTED;
@@ -1223,7 +1223,7 @@ ad_get_account_domain_send(TALLOC_CTX *mem_ctx,
 
     ret = sss_filter_sanitize(state, data->filter_value, &state->clean_filter);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Cannot sanitize filter [%d]: %s\n", ret, sss_strerror(ret));
         goto immediately;
     }
@@ -1239,14 +1239,14 @@ ad_get_account_domain_send(TALLOC_CTX *mem_ctx,
     id_ctx->gc_ctx->ignore_mark_offline = true;
     state->op = sdap_id_op_create(state, id_ctx->gc_ctx->conn_cache);
     if (state->op == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_id_op_create failed\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_id_op_create failed\n");
         ret = ENOMEM;
         goto immediately;
     }
 
     ret = ad_get_account_domain_connect_retry(req);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "Connection error");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Connection error");
         goto immediately;
     }
 
@@ -1281,14 +1281,14 @@ static errno_t ad_get_account_domain_prepare_search(struct tevent_req *req)
         objectclass = state->sdap_id_ctx->opts->group_map[SDAP_OC_GROUP].name;
         break;
     default:
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Unsupported request type %X\n",
               state->entry_type & BE_REQ_TYPE_MASK);
         return EINVAL;
     }
 
     if (state->search_bases == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Failed to prepare search: missing search_bases\n");
         return EINVAL;
     }
@@ -1297,7 +1297,7 @@ static errno_t ad_get_account_domain_prepare_search(struct tevent_req *req)
     case BE_FILTER_IDNUM:
         break;
     default:
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Unsupported filter type %X\n", state->filter_type);
         return EINVAL;
     }
@@ -1377,7 +1377,7 @@ static void ad_get_account_domain_search(struct tevent_req *req)
                                    false);
 
     if (subreq == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_get_generic_send failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_get_generic_send failed.\n");
         tevent_req_error(req, EIO);
         return;
     }
@@ -1403,7 +1403,7 @@ static void ad_get_account_domain_search_done(struct tevent_req *subreq)
         return;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC,
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
           "Search returned %zu results.\n", count);
 
     if (count > 0) {
@@ -1455,13 +1455,13 @@ static void ad_get_account_domain_evaluate(struct tevent_req *req)
     if (state->count == 0) {
         if (state->twopass
                 && state->entry_type != BE_REQ_USER) {
-            DEBUG(SSSDBG_TRACE_FUNC, "Retrying search\n");
+            BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Retrying search\n");
 
             state->entry_type = BE_REQ_USER;
             state->base_iter = 0;
             ret = ad_get_account_domain_prepare_search(req);
             if (ret != EOK) {
-                DEBUG(SSSDBG_OP_FAILURE, "Cannot retry search\n");
+                BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Cannot retry search\n");
                 tevent_req_error(req, ret);
                 return;
             }
@@ -1470,7 +1470,7 @@ static void ad_get_account_domain_evaluate(struct tevent_req *req)
             return;
         }
 
-        DEBUG(SSSDBG_TRACE_FUNC, "Not found\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Not found\n");
         dp_reply_std_set(&state->reply, DP_ERR_DECIDE, ERR_NOT_FOUND, NULL);
         tevent_req_done(req);
         return;
@@ -1480,7 +1480,7 @@ static void ad_get_account_domain_evaluate(struct tevent_req *req)
          * messages back until we switch to the rdp_* requests
          * from the responder side
          */
-        DEBUG(SSSDBG_OP_FAILURE, "Multiple entries found, error!\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Multiple entries found, error!\n");
         dp_reply_std_set(&state->reply, DP_ERR_DECIDE, ERANGE, NULL);
         tevent_req_done(req);
         return;
@@ -1491,14 +1491,14 @@ static void ad_get_account_domain_evaluate(struct tevent_req *req)
                                      state->objects[0],
                                      state->sdom->dom);
     if (obj_dom == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Could not match entry with domain!\n");
         dp_reply_std_set(&state->reply, DP_ERR_DECIDE, ERR_NOT_FOUND, NULL);
         tevent_req_done(req);
         return;
     }
 
-    DEBUG(SSSDBG_TRACE_INTERNAL,
+    BE_REQ_DEBUG(SSSDBG_TRACE_INTERNAL, req,
           "Found object in domain %s\n", obj_dom->name);
     dp_reply_std_set(&state->reply, DP_ERR_DECIDE, EOK, obj_dom->name);
     tevent_req_done(req);

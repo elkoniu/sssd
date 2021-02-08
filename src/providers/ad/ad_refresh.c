@@ -50,7 +50,7 @@ static struct tevent_req *ad_refresh_send(TALLOC_CTX *mem_ctx,
     req = tevent_req_create(mem_ctx, &state,
                             struct ad_refresh_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -89,10 +89,10 @@ static struct tevent_req *ad_refresh_send(TALLOC_CTX *mem_ctx,
 
     ret = ad_refresh_step(req);
     if (ret == EOK) {
-        DEBUG(SSSDBG_TRACE_FUNC, "Nothing to refresh\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Nothing to refresh\n");
         goto immediately;
     } else if (ret != EAGAIN) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "ad_refresh_step() failed "
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "ad_refresh_step() failed "
                                    "[%d]: %s\n", ret, sss_strerror(ret));
         goto immediately;
     }
@@ -129,7 +129,7 @@ static errno_t ad_refresh_step(struct tevent_req *req)
         goto done;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "Issuing refresh of %s %s\n",
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Issuing refresh of %s %s\n",
           be_req2str(state->account_req->entry_type),
           state->account_req->filter_value);
 
@@ -163,7 +163,7 @@ static void ad_refresh_done(struct tevent_req *subreq)
     ret = ad_account_info_recv(subreq, &dp_error, &err_msg);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Unable to refresh %s [dp_error: %d, "
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Unable to refresh %s [dp_error: %d, "
               "errno: %d]: %s\n", be_req2str(state->account_req->entry_type),
               dp_error, ret, err_msg);
         goto done;
@@ -173,7 +173,7 @@ static void ad_refresh_done(struct tevent_req *subreq)
         ret = sysdb_set_initgr_expire_timestamp(state->domain,
                                                 state->account_req->filter_value);
         if (ret != EOK) {
-            DEBUG(SSSDBG_MINOR_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
                   "Failed to set initgroups expiration for [%s]\n",
                   state->account_req->filter_value);
         }

@@ -286,7 +286,7 @@ struct tevent_req *ad_srv_plugin_send(TALLOC_CTX *mem_ctx,
     req = tevent_req_create(mem_ctx, &state,
                             struct ad_srv_plugin_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -355,14 +355,14 @@ static void ad_srv_plugin_ping_done(struct tevent_req *subreq)
     /* Ignore AD site found by dns discovery if specific site is set in
      * configuration file. */
     if (state->ctx->ad_site_override != NULL) {
-        DEBUG(SSSDBG_TRACE_INTERNAL,
+        BE_REQ_DEBUG(SSSDBG_TRACE_INTERNAL, req,
               "Ignoring AD site found by DNS discovery: '%s', "
               "using configured value: '%s' instead.\n",
               state->site, state->ctx->ad_site_override);
         state->site = state->ctx->ad_site_override;
 
         if (state->forest == NULL) {
-            DEBUG(SSSDBG_TRACE_FUNC, "Missing forest information, using %s\n",
+            BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Missing forest information, using %s\n",
                   state->discovery_domain);
             state->forest = state->discovery_domain;
         }
@@ -380,7 +380,7 @@ static void ad_srv_plugin_ping_done(struct tevent_req *subreq)
         ret = ad_srv_plugin_ctx_switch_site(state->ctx, state->site,
                                             state->forest);
         if (ret != EOK) {
-            DEBUG(SSSDBG_CRIT_FAILURE, "Unable to set site [%d]: %s\n",
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Unable to set site [%d]: %s\n",
                   ret, sss_strerror(ret));
             goto done;
         }
@@ -424,7 +424,7 @@ static void ad_srv_plugin_ping_done(struct tevent_req *subreq)
         goto done;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "About to discover primary and "
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "About to discover primary and "
                               "backup servers\n");
 
     subreq = fo_discover_servers_send(state, state->ev,
@@ -471,14 +471,14 @@ static void ad_srv_plugin_servers_done(struct tevent_req *subreq)
         return;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "Got %zu primary and %zu backup servers\n",
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Got %zu primary and %zu backup servers\n",
           state->num_primary_servers, state->num_backup_servers);
 
     ret = ad_sort_servers_by_dns(state, state->discovery_domain,
                                  &state->primary_servers,
                                  state->num_primary_servers);
     if (ret != EOK) {
-        DEBUG(SSSDBG_MINOR_FAILURE, "Unable to sort primary servers by DNS"
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "Unable to sort primary servers by DNS"
                                      "[%d]: %s\n", ret, sss_strerror(ret));
         /* continue */
     }
@@ -487,7 +487,7 @@ static void ad_srv_plugin_servers_done(struct tevent_req *subreq)
                                  &state->backup_servers,
                                  state->num_backup_servers);
     if (ret != EOK) {
-        DEBUG(SSSDBG_MINOR_FAILURE, "Unable to sort backup servers by DNS"
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "Unable to sort backup servers by DNS"
                                      "[%d]: %s\n", ret, sss_strerror(ret));
         /* continue */
     }
