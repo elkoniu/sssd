@@ -265,14 +265,14 @@ static void krb5_child_timeout(struct tevent_context *ev,
         return;
     }
 
-    DEBUG(SSSDBG_IMPORTANT_INFO,
+    BE_REQ_DEBUG(SSSDBG_IMPORTANT_INFO, req,
           "Timeout for child [%d] reached. In case KDC is distant or network "
            "is slow you may consider increasing value of krb5_auth_timeout.\n",
            state->child_pid);
 
     ret = kill(state->child_pid, SIGKILL);
     if (ret == -1) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "kill failed [%d][%s].\n", errno, strerror(errno));
     }
 
@@ -292,7 +292,7 @@ static errno_t activate_child_timeout_handler(struct tevent_req *req,
     state->timeout_handler = tevent_add_timer(ev, state, tv,
                                            krb5_child_timeout, req);
     if (state->timeout_handler == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_add_timer failed.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_add_timer failed.\n");
         return ENOMEM;
     }
 
@@ -441,21 +441,21 @@ static errno_t fork_child(struct tevent_req *req)
 
     ret = set_extra_args(state, state->kr->krb5_ctx, &krb5_child_extra_args);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "set_extra_args failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "set_extra_args failed.\n");
         goto fail;
     }
 
     ret = pipe(pipefd_from_child);
     if (ret == -1) {
         ret = errno;
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "pipe (from) failed [%d][%s].\n", errno, strerror(errno));
         goto fail;
     }
     ret = pipe(pipefd_to_child);
     if (ret == -1) {
         ret = errno;
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "pipe (to) failed [%d][%s].\n", errno, strerror(errno));
         goto fail;
     }
@@ -470,7 +470,7 @@ static errno_t fork_child(struct tevent_req *req)
                       STDIN_FILENO, STDOUT_FILENO);
 
         /* We should never get here */
-        DEBUG(SSSDBG_CRIT_FAILURE, "BUG: Could not exec KRB5 child\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "BUG: Could not exec KRB5 child\n");
     } else if (pid > 0) { /* parent */
         state->child_pid = pid;
         state->io->read_from_child_fd = pipefd_from_child[0];
@@ -482,7 +482,7 @@ static errno_t fork_child(struct tevent_req *req)
 
         ret = child_handler_setup(state->ev, pid, NULL, NULL, NULL);
         if (ret != EOK) {
-            DEBUG(SSSDBG_CRIT_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
                   "Could not set up child signal handler\n");
             goto fail;
         }
@@ -490,13 +490,13 @@ static errno_t fork_child(struct tevent_req *req)
         ret = activate_child_timeout_handler(req, state->ev,
                   dp_opt_get_int(state->kr->krb5_ctx->opts, KRB5_AUTH_TIMEOUT));
         if (ret != EOK) {
-            DEBUG(SSSDBG_CRIT_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
                   "activate_child_timeout_handler failed.\n");
         }
 
     } else { /* error */
         ret = errno;
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "fork failed [%d][%s].\n", errno, strerror(ret));
         goto fail;
     }
@@ -535,7 +535,7 @@ struct tevent_req *handle_child_send(TALLOC_CTX *mem_ctx,
 
     state->io = talloc(state, struct child_io_fds);
     if (state->io == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "talloc failed.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "talloc failed.\n");
         ret = ENOMEM;
         goto fail;
     }
@@ -545,13 +545,13 @@ struct tevent_req *handle_child_send(TALLOC_CTX *mem_ctx,
 
     ret = create_send_buffer(kr, &buf);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "create_send_buffer failed.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "create_send_buffer failed.\n");
         goto fail;
     }
 
     ret = fork_child(req);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "fork_child failed.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "fork_child failed.\n");
         goto fail;
     }
 

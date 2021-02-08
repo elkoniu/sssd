@@ -91,16 +91,16 @@ static void renew_tgt_done(struct tevent_req *req)
     ret = krb5_auth_queue_recv(req, &pam_status, &dp_err);
     talloc_free(req);
     if (ret) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "krb5_auth request failed.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "krb5_auth request failed.\n");
         if (auth_data->renew_data != NULL) {
-            DEBUG(SSSDBG_FUNC_DATA, "Giving back pam data.\n");
+            BE_REQ_DEBUG(SSSDBG_FUNC_DATA, req, "Giving back pam data.\n");
             auth_data->renew_data->pd = talloc_steal(auth_data->renew_data,
                                                      auth_data->pd);
         }
     } else {
         switch (pam_status) {
             case PAM_SUCCESS:
-                DEBUG(SSSDBG_CONF_SETTINGS,
+                BE_REQ_DEBUG(SSSDBG_CONF_SETTINGS, req,
                       "Successfully renewed TGT for user [%s].\n",
                           auth_data->pd->user);
 /* In general a successful renewal will update the renewal item and free the
@@ -114,36 +114,36 @@ static void renew_tgt_done(struct tevent_req *req)
                     if (value.type == HASH_VALUE_PTR &&
                         auth_data->renew_data == talloc_get_type(value.ptr,
                                                            struct renew_data)) {
-                        DEBUG(SSSDBG_FUNC_DATA,
+                        BE_REQ_DEBUG(SSSDBG_FUNC_DATA, req,
                               "New TGT was not added for renewal, "
                                   "removing list entry for user [%s].\n",
                                   auth_data->pd->user);
                         ret = hash_delete(auth_data->table, &auth_data->key);
                         if (ret != HASH_SUCCESS) {
-                            DEBUG(SSSDBG_CRIT_FAILURE, "hash_delete failed.\n");
+                            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "hash_delete failed.\n");
                         }
                     }
                 }
                 break;
             case PAM_AUTHINFO_UNAVAIL:
             case PAM_AUTHTOK_LOCK_BUSY:
-                DEBUG(SSSDBG_CONF_SETTINGS,
+                BE_REQ_DEBUG(SSSDBG_CONF_SETTINGS, req,
                       "Cannot renewed TGT for user [%s] while offline, "
                           "will retry later.\n",
                           auth_data->pd->user);
                 if (auth_data->renew_data != NULL) {
-                    DEBUG(SSSDBG_FUNC_DATA, "Giving back pam data.\n");
+                    BE_REQ_DEBUG(SSSDBG_FUNC_DATA, req, "Giving back pam data.\n");
                     auth_data->renew_data->pd = talloc_steal(auth_data->renew_data,
                                                              auth_data->pd);
                 }
                 break;
             default:
-                DEBUG(SSSDBG_CRIT_FAILURE,
+                BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
                       "Failed to renew TGT for user [%s].\n",
                           auth_data->pd->user);
                 ret = hash_delete(auth_data->table, &auth_data->key);
                 if (ret != HASH_SUCCESS) {
-                    DEBUG(SSSDBG_CRIT_FAILURE, "hash_delete failed.\n");
+                    BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "hash_delete failed.\n");
                 }
         }
     }
