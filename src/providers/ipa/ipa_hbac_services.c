@@ -70,7 +70,7 @@ ipa_hbac_service_info_send(TALLOC_CTX *mem_ctx,
 
     req = tevent_req_create(mem_ctx, &state, struct ipa_hbac_service_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create failed.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create failed.\n");
         return NULL;
     }
 
@@ -93,7 +93,7 @@ ipa_hbac_service_info_send(TALLOC_CTX *mem_ctx,
 
     state->attrs = talloc_array(state, const char *, 6);
     if (state->attrs == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "Failed to allocate service attribute list.\n");
         ret = ENOMEM;
         goto immediate;
@@ -204,7 +204,7 @@ ipa_hbac_service_info_done(struct tevent_req *subreq)
                                  state->service_count,
                                  state->services);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Could not replace attribute names\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Could not replace attribute names\n");
         goto done;
     }
 
@@ -303,7 +303,7 @@ ipa_hbac_servicegroup_info_done(struct tevent_req *subreq)
                                      group_count,
                                      groups);
         if (ret != EOK) {
-            DEBUG(SSSDBG_CRIT_FAILURE, "Could not replace attribute names\n");
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Could not replace attribute names\n");
             goto done;
         }
 
@@ -311,7 +311,7 @@ ipa_hbac_servicegroup_info_done(struct tevent_req *subreq)
                                      state->servicegroup_count,
                                      state->servicegroups);
         if (ret != EOK) {
-            DEBUG(SSSDBG_CRIT_FAILURE, "Could not replace attribute names\n");
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Could not replace attribute names\n");
             goto done;
         }
 

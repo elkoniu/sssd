@@ -143,7 +143,7 @@ ipa_host_info_done(struct tevent_req *subreq)
 
             ret = ipa_hostgroup_info_next(req, state);
             if (ret == EOK) {
-                DEBUG(SSSDBG_CRIT_FAILURE, "No host search base configured?\n");
+                BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "No host search base configured?\n");
                 tevent_req_error(req, EINVAL);
                 return;
             } else if (ret != EAGAIN) {
@@ -158,7 +158,7 @@ ipa_host_info_done(struct tevent_req *subreq)
             }
 
             if (!sdap_has_deref_support_ex(state->sh, state->opts, true)) {
-                DEBUG(SSSDBG_CRIT_FAILURE, "Server does not support deref\n");
+                BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Server does not support deref\n");
                 tevent_req_error(req, EIO);
                 return;
             }
@@ -181,7 +181,7 @@ ipa_host_info_done(struct tevent_req *subreq)
                                                            SDAP_ENUM_SEARCH_TIMEOUT));
             if (subreq == NULL) {
                 talloc_free(maps);
-                DEBUG(SSSDBG_CRIT_FAILURE, "Error requesting host info\n");
+                BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Error requesting host info\n");
                 tevent_req_error(req, EIO);
                 return;
             }
@@ -252,7 +252,7 @@ ipa_hostgroup_info_done(struct tevent_req *subreq)
                                     &hostgroups);
         talloc_zfree(subreq);
         if (ret != EOK) {
-            DEBUG(SSSDBG_OP_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
                   "sdap_get_generic_recv failed: [%d]\n", ret);
             tevent_req_error(req, ret);
             return;
@@ -298,7 +298,7 @@ ipa_hostgroup_info_done(struct tevent_req *subreq)
         if (ret != EOK) goto done;
 
         if (state->hostgroup_count == 0) {
-            DEBUG(SSSDBG_FUNC_DATA, "No host groups were dereferenced\n");
+            BE_REQ_DEBUG(SSSDBG_FUNC_DATA, req, "No host groups were dereferenced\n");
         } else {
             state->hostgroups = talloc_zero_array(state, struct sysdb_attrs *,
                                                   state->hostgroup_count);
@@ -324,7 +324,7 @@ ipa_hostgroup_info_done(struct tevent_req *subreq)
                              &hostgroup_name);
                 if (ret != EOK) goto done;
 
-                DEBUG(SSSDBG_FUNC_DATA, "Dereferenced host group: %s\n",
+                BE_REQ_DEBUG(SSSDBG_FUNC_DATA, req, "Dereferenced host group: %s\n",
                                         hostgroup_name);
                 state->hostgroups[j] = talloc_steal(state->hostgroups,
                                                     deref_result[i]->attrs);

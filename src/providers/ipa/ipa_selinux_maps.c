@@ -165,7 +165,7 @@ static void ipa_selinux_get_maps_done(struct tevent_req *subreq)
     }
 
     if (count > 0) {
-        DEBUG(SSSDBG_TRACE_FUNC,
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
               "Found %zu user maps in current search base\n", count);
 
         total_count = count + state->map_count;
@@ -192,7 +192,7 @@ static void ipa_selinux_get_maps_done(struct tevent_req *subreq)
     }
 
     if (state->map_count == 0) {
-        DEBUG(SSSDBG_TRACE_FUNC, "No SELinux user maps found!\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "No SELinux user maps found!\n");
         ret = ENOENT;
     }
 

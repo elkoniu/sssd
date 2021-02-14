@@ -70,14 +70,14 @@ ipa_get_config_send(TALLOC_CTX *mem_ctx,
 
     ret = domain_to_basedn(state, domain, &ldap_basedn);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "domain_to_basedn failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "domain_to_basedn failed.\n");
         goto done;
     }
 
     state->base = talloc_asprintf(state, IPA_CONFIG_SEARCH_BASE_TEMPLATE,
                                   ldap_basedn);
     if (state->base == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "talloc_asprintf failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "talloc_asprintf failed.\n");
         ret = ENOMEM;
         goto done;
     }
@@ -124,7 +124,7 @@ static void ipa_get_config_done(struct tevent_req *subreq)
     }
 
     if (reply_count != 1) {
-        DEBUG(SSSDBG_OP_FAILURE, "Unexpected number of results, expected 1, "
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Unexpected number of results, expected 1, "
                                   "got %zu.\n", reply_count);
         ret = EINVAL;
         goto done;
