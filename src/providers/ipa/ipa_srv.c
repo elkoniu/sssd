@@ -101,7 +101,7 @@ struct tevent_req *ipa_srv_plugin_send(TALLOC_CTX *mem_ctx,
     req = tevent_req_create(mem_ctx, &state,
                             struct ipa_srv_plugin_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -134,7 +134,7 @@ struct tevent_req *ipa_srv_plugin_send(TALLOC_CTX *mem_ctx,
         goto immediately;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "About to discover primary and "
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "About to discover primary and "
                               "backup servers\n");
 
     subreq = fo_discover_servers_send(state, ev, ctx->resolv_ctx, service,
@@ -176,7 +176,7 @@ static void ipa_srv_plugin_done(struct tevent_req *subreq)
         return;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "Got %zu primary and %zu backup servers\n",
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Got %zu primary and %zu backup servers\n",
           state->num_primary_servers, state->num_backup_servers);
 
     tevent_req_done(req);

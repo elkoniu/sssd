@@ -415,7 +415,7 @@ ipa_sudo_fetch_send(TALLOC_CTX *mem_ctx,
     req = tevent_req_create(mem_ctx, &state,
                             struct ipa_sudo_fetch_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -477,7 +477,7 @@ ipa_sudo_fetch_addtl_cmdgroups(struct tevent_req *req)
     struct sdap_attr_map *map;
     char *filter;
 
-    DEBUG(SSSDBG_TRACE_FUNC, "About to fetch additional command groups\n");
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "About to fetch additional command groups\n");
 
     state = tevent_req_data(req, struct ipa_sudo_fetch_state);
     map = state->map_cmdgroup;
@@ -486,7 +486,7 @@ ipa_sudo_fetch_addtl_cmdgroups(struct tevent_req *req)
                              map[IPA_OC_SUDOCMDGROUP].name,
                              state->cmdgroups_filter);
     if (filter == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Unable to build filter\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Unable to build filter\n");
         return ENOMEM;
     }
 
@@ -520,14 +520,14 @@ ipa_sudo_fetch_addtl_cmdgroups_done(struct tevent_req *subreq)
         goto done;
     }
 
-    DEBUG(SSSDBG_FUNC_DATA, "Received %zu additional command groups\n",
+    BE_REQ_DEBUG(SSSDBG_FUNC_DATA, req, "Received %zu additional command groups\n",
           num_attrs);
 
     ret = ipa_sudo_filter_rules_bycmdgroups(state, state->domain, attrs,
                                             num_attrs, state->map_rule,
                                             &filter);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Unable to construct rules filter "
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Unable to construct rules filter "
               "[%d]: %s\n", ret, sss_strerror(ret));
         goto done;
     }
@@ -559,14 +559,14 @@ ipa_sudo_fetch_rules(struct tevent_req *req)
     char *host_filter;
     char *filter;
 
-    DEBUG(SSSDBG_TRACE_FUNC, "About to fetch sudo rules\n");
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "About to fetch sudo rules\n");
 
     state = tevent_req_data(req, struct ipa_sudo_fetch_state);
     map = state->map_rule;
 
     host_filter = ipa_sudo_host_filter(state, state->host, map);
     if (host_filter == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Unable to build host filter\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Unable to build host filter\n");
         return ENOMEM;
     }
 
@@ -576,7 +576,7 @@ ipa_sudo_fetch_rules(struct tevent_req *req)
                              host_filter, state->search_filter);
     talloc_zfree(host_filter);
     if (filter == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Unable to build filter\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Unable to build filter\n");
         return ENOMEM;
     }
 
@@ -609,11 +609,11 @@ ipa_sudo_fetch_rules_done(struct tevent_req *subreq)
         goto done;
     }
 
-    DEBUG(SSSDBG_FUNC_DATA, "Received %zu sudo rules\n", num_attrs);
+    BE_REQ_DEBUG(SSSDBG_FUNC_DATA, req, "Received %zu sudo rules\n", num_attrs);
 
     ret = ipa_sudo_conv_rules(state->conv, attrs, num_attrs);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Failed when converting rules "
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Failed when converting rules "
               "[%d]: %s\n", ret, sss_strerror(ret));
         goto done;
     }
@@ -642,12 +642,12 @@ ipa_sudo_fetch_cmdgroups(struct tevent_req *req)
     struct tevent_req *subreq;
     char *filter;
 
-    DEBUG(SSSDBG_TRACE_FUNC, "About to fetch sudo command groups\n");
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "About to fetch sudo command groups\n");
 
     state = tevent_req_data(req, struct ipa_sudo_fetch_state);
 
     if (ipa_sudo_conv_has_cmdgroups(state->conv)) {
-        DEBUG(SSSDBG_TRACE_FUNC, "No command groups needs to be downloaded\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "No command groups needs to be downloaded\n");
         return ipa_sudo_fetch_cmds(req);
     }
 
@@ -655,7 +655,7 @@ ipa_sudo_fetch_cmdgroups(struct tevent_req *req)
                                            state->cmd_threshold);
 
     if (filter == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Unable to build filter\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Unable to build filter\n");
         return ENOMEM;
     }
 
@@ -689,12 +689,12 @@ ipa_sudo_fetch_cmdgroups_done(struct tevent_req *subreq)
         goto done;
     }
 
-    DEBUG(SSSDBG_FUNC_DATA, "Received %zu sudo command groups\n",
+    BE_REQ_DEBUG(SSSDBG_FUNC_DATA, req, "Received %zu sudo command groups\n",
           num_attrs);
 
     ret = ipa_sudo_conv_cmdgroups(state->conv, attrs, num_attrs);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Failed when converting command groups "
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Failed when converting command groups "
               "[%d]: %s\n", ret, sss_strerror(ret));
         goto done;
     }
@@ -723,19 +723,19 @@ ipa_sudo_fetch_cmds(struct tevent_req *req)
     struct tevent_req *subreq;
     char *filter;
 
-    DEBUG(SSSDBG_TRACE_FUNC, "About to fetch sudo commands\n");
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "About to fetch sudo commands\n");
 
     state = tevent_req_data(req, struct ipa_sudo_fetch_state);
 
     if (ipa_sudo_conv_has_cmds(state->conv)) {
-        DEBUG(SSSDBG_TRACE_FUNC, "No commands needs to be downloaded\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "No commands needs to be downloaded\n");
         return EOK;
     }
 
     filter = ipa_sudo_conv_cmd_filter(state, state->conv, state->cmd_threshold);
 
     if (filter == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Unable to build filter\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Unable to build filter\n");
         return ENOMEM;
     }
 
@@ -769,11 +769,11 @@ ipa_sudo_fetch_cmds_done(struct tevent_req *subreq)
         goto done;
     }
 
-    DEBUG(SSSDBG_FUNC_DATA, "Received %zu sudo commands\n", num_attrs);
+    BE_REQ_DEBUG(SSSDBG_FUNC_DATA, req, "Received %zu sudo commands\n", num_attrs);
 
     ret = ipa_sudo_conv_cmds(state->conv, attrs, num_attrs);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Failed when converting commands "
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Failed when converting commands "
               "[%d]: %s\n", ret, sss_strerror(ret));
         goto done;
     }
@@ -796,12 +796,12 @@ ipa_sudo_fetch_done(struct tevent_req *req)
 
     state = tevent_req_data(req, struct ipa_sudo_fetch_state);
 
-    DEBUG(SSSDBG_TRACE_FUNC, "About to convert rules\n");
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "About to convert rules\n");
 
     ret = ipa_sudo_conv_result(state, state->conv,
                                &state->rules, &state->num_rules);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Unable to convert rules [%d]: %s\n",
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Unable to convert rules [%d]: %s\n",
               ret, sss_strerror(ret));
         goto done;
     }
@@ -877,7 +877,7 @@ ipa_sudo_refresh_send(TALLOC_CTX *mem_ctx,
 
     req = tevent_req_create(mem_ctx, &state, struct ipa_sudo_refresh_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -893,7 +893,7 @@ ipa_sudo_refresh_send(TALLOC_CTX *mem_ctx,
     state->sdap_op = sdap_id_op_create(state,
                                        sudo_ctx->id_ctx->conn->conn_cache);
     if (!state->sdap_op) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_id_op_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_id_op_create() failed\n");
         ret = ENOMEM;
         goto immediately;
     }
@@ -944,7 +944,7 @@ ipa_sudo_refresh_retry(struct tevent_req *req)
 
     subreq = sdap_id_op_connect_send(state->sdap_op, state, &ret);
     if (subreq == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "sdap_id_op_connect_send() failed: "
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "sdap_id_op_connect_send() failed: "
                                    "%d(%s)\n", ret, strerror(ret));
         return ret;
     }
@@ -970,7 +970,7 @@ ipa_sudo_refresh_connect_done(struct tevent_req *subreq)
     talloc_zfree(subreq);
 
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "SUDO LDAP connection failed "
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "SUDO LDAP connection failed "
                                    "[%d]: %s\n", ret, strerror(ret));
         state->dp_error = dp_error;
         tevent_req_error(req, ret);
@@ -979,8 +979,8 @@ ipa_sudo_refresh_connect_done(struct tevent_req *subreq)
 
     state->sh = sdap_id_op_handle(state->sdap_op);
 
-    DEBUG(SSSDBG_TRACE_FUNC, "SUDO LDAP connection successful\n");
-    DEBUG(SSSDBG_TRACE_FUNC, "About to fetch host information\n");
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "SUDO LDAP connection successful\n");
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "About to fetch host information\n");
 
     /* Obtain host information. */
     hostname = dp_opt_get_string(state->ipa_opts->basic, IPA_HOSTNAME);
@@ -1021,7 +1021,7 @@ ipa_sudo_refresh_host_done(struct tevent_req *subreq)
                              &host->num_hostgroups, &host->hostgroups);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "Unable to retrieve host information "
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Unable to retrieve host information "
                                  "[%d]: %s\n", ret, sss_strerror(ret));
         state->dp_error = DP_ERR_FATAL;
         tevent_req_error(req, ret);
@@ -1076,7 +1076,7 @@ ipa_sudo_refresh_done(struct tevent_req *subreq)
 
     ret = sysdb_transaction_start(state->sysdb);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Failed to start transaction\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Failed to start transaction\n");
         goto done;
     }
     in_transaction = true;
@@ -1094,7 +1094,7 @@ ipa_sudo_refresh_done(struct tevent_req *subreq)
 
     ret = sysdb_transaction_commit(state->sysdb);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Failed to commit transaction\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Failed to commit transaction\n");
         goto done;
     }
     in_transaction = false;
@@ -1103,13 +1103,13 @@ ipa_sudo_refresh_done(struct tevent_req *subreq)
         sdap_sudo_set_usn(state->sudo_ctx->id_ctx->srv_opts, usn);
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "Sudo rules are successfully stored in cache\n");
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Sudo rules are successfully stored in cache\n");
 
 done:
     if (in_transaction) {
         sret = sysdb_transaction_cancel(state->sysdb);
         if (sret != EOK) {
-            DEBUG(SSSDBG_CRIT_FAILURE, "Could not cancel transaction\n");
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Could not cancel transaction\n");
         }
     }
 
