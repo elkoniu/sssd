@@ -75,19 +75,19 @@ ipa_deskprofile_rule_info_send(TALLOC_CTX *mem_ctx,
 
     req = tevent_req_create(mem_ctx, &state, struct ipa_deskprofile_rule_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create failed.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create failed.\n");
         return NULL;
     }
 
     if (ipa_host == NULL) {
         ret = EINVAL;
-        DEBUG(SSSDBG_CRIT_FAILURE, "Missing host\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Missing host\n");
         goto immediate;
     }
 
     ret = sysdb_attrs_get_string(ipa_host, SYSDB_ORIG_DN, &host_dn);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Could not identify IPA hostname\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Could not identify IPA hostname\n");
         goto immediate;
     }
 
@@ -104,7 +104,7 @@ ipa_deskprofile_rule_info_send(TALLOC_CTX *mem_ctx,
     state->attrs = deskprofile_get_attrs_to_get_cached_rules(state);
     if (state->attrs == NULL) {
         ret = ENOMEM;
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "deskprofile_get_attrs_get_cached_rules() failed\n");
         goto immediate;
     }
@@ -127,7 +127,7 @@ ipa_deskprofile_rule_info_send(TALLOC_CTX *mem_ctx,
     ret = sysdb_attrs_get_string_array(ipa_host, SYSDB_ORIG_MEMBEROF,
                                        state, &memberof_list);
     if (ret != EOK && ret != ENOENT) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Could not identify.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Could not identify.\n");
     } else if (ret == ENOENT) {
         /* This host is not a member of any hostgroups */
         memberof_list = talloc_array(state, const char *, 1);
@@ -143,7 +143,7 @@ ipa_deskprofile_rule_info_send(TALLOC_CTX *mem_ctx,
                                   memberof_list[i],
                                   &host_group_clean);
         if (ret != EOK) {
-            DEBUG(SSSDBG_CRIT_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
                   "sss_filter_sanitize() failed [%d]: %s\n",
                   ret, sss_strerror(ret));
             goto immediate;
@@ -161,7 +161,7 @@ ipa_deskprofile_rule_info_send(TALLOC_CTX *mem_ctx,
     /* Add the username to the filter */
     ret = sss_parse_internal_fqname(state, username, &user, NULL);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "sss_parse_internal_fqname() failed [%d]: %s\n",
               ret, sss_strerror(ret));
         goto immediate;
@@ -178,7 +178,7 @@ ipa_deskprofile_rule_info_send(TALLOC_CTX *mem_ctx,
     ret = get_sysdb_grouplist(state, domain->sysdb, domain, username,
                               &groups_list);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "get_sysdb_grouplist() failed [%d]: %s\n",
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "get_sysdb_grouplist() failed [%d]: %s\n",
               ret, sss_strerror(ret));
         goto immediate;
     }
@@ -186,7 +186,7 @@ ipa_deskprofile_rule_info_send(TALLOC_CTX *mem_ctx,
     for (size_t i = 0; groups_list[i] != NULL; i++) {
         ret = sss_filter_sanitize(state, groups_list[i], &group_clean);
         if (ret != EOK) {
-            DEBUG(SSSDBG_CRIT_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
                   "sss_filter_sanitize() failed [%d]: %s\n",
                   ret, sss_strerror(ret));
             goto immediate;
@@ -194,7 +194,7 @@ ipa_deskprofile_rule_info_send(TALLOC_CTX *mem_ctx,
 
         ret = sss_parse_internal_fqname(state, group_clean, &group, NULL);
         if (ret != EOK) {
-            DEBUG(SSSDBG_CRIT_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
                   "sss_parse_internal_fqname() failed [%d]: %s\n",
                   ret, sss_strerror(ret));
             goto immediate;
@@ -226,7 +226,7 @@ ipa_deskprofile_rule_info_send(TALLOC_CTX *mem_ctx,
              *
              * As, here, it's the first case happening, let's return EINVAL.
              */
-            DEBUG(SSSDBG_CRIT_FAILURE, "No search base found\n");
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "No search base found\n");
             ret = EINVAL;
         }
         goto immediate;
@@ -302,7 +302,7 @@ ipa_deskprofile_rule_info_done(struct tevent_req *subreq)
                                 &rule_count,
                                 &rules);
     if (ret != EOK) {
-        DEBUG(SSSDBG_MINOR_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
               "Could not retrieve Desktop Profile rules\n");
         goto fail;
     }
@@ -334,7 +334,7 @@ ipa_deskprofile_rule_info_done(struct tevent_req *subreq)
     } else if (ret != EOK) {
         goto fail;
     } else if (ret == EOK && state->rule_count == 0) {
-        DEBUG(SSSDBG_TRACE_FUNC, "No rules apply to this host\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "No rules apply to this host\n");
         tevent_req_error(req, ENOENT);
         return;
     }

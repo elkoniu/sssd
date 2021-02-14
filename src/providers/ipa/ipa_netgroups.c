@@ -218,7 +218,7 @@ struct tevent_req *ipa_get_netgroups_send(TALLOC_CTX *memctx,
     state->dom = dom;
 
     if (!ipa_options->id->sdom->netgroup_search_bases) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "Netgroup lookup request without a search base\n");
         ret = EINVAL;
         goto done;
@@ -261,7 +261,7 @@ static errno_t ipa_netgr_next_base(struct tevent_req *req)
         return ENOMEM;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC,
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
             "Searching for netgroups with base [%s]\n",
              netgr_bases[state->netgr_base_iter]->basedn);
 
@@ -315,7 +315,7 @@ static void ipa_get_netgroups_process(struct tevent_req *subreq)
         goto done;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "Search for netgroups, returned %zu results.\n",
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Search for netgroups, returned %zu results.\n",
                               netgroups_count);
 
     if (netgroups_count == 0) {
@@ -575,7 +575,7 @@ static void ipa_netgr_members_process(struct tevent_req *subreq)
         goto fail;
     }
 
-    DEBUG(SSSDBG_TRACE_INTERNAL, "Found %zu members in current search base\n",
+    BE_REQ_DEBUG(SSSDBG_TRACE_INTERNAL, req, "Found %zu members in current search base\n",
                                   count);
 
     next_call = NULL;
@@ -611,7 +611,7 @@ static void ipa_netgr_members_process(struct tevent_req *subreq)
         ret = ipa_netgr_fetch_hosts(state, req);
         table = state->new_hosts;
     } else {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "Invalid entity type given for processing: %d\n",
                state->current_entity);
         ret = EINVAL;

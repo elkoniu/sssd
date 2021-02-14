@@ -68,19 +68,19 @@ ipa_hbac_rule_info_send(TALLOC_CTX *mem_ctx,
 
     req = tevent_req_create(mem_ctx, &state, struct ipa_hbac_rule_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create failed.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create failed.\n");
         return NULL;
     }
 
     if (ipa_host == NULL) {
         ret = EINVAL;
-        DEBUG(SSSDBG_CRIT_FAILURE, "Missing host\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Missing host\n");
         goto immediate;
     }
 
     ret = sysdb_attrs_get_string(ipa_host, SYSDB_ORIG_DN, &host_dn);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Could not identify IPA hostname\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Could not identify IPA hostname\n");
         goto immediate;
     }
 
@@ -131,7 +131,7 @@ ipa_hbac_rule_info_send(TALLOC_CTX *mem_ctx,
     ret = sysdb_attrs_get_string_array(ipa_host, SYSDB_ORIG_MEMBEROF,
                                        state, &memberof_list);
     if (ret != EOK && ret != ENOENT) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Could not identify.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Could not identify.\n");
     } else if (ret == ENOENT) {
         /* This host is not a member of any hostgroups */
         memberof_list = talloc_array(state, const char *, 1);
@@ -175,7 +175,7 @@ ipa_hbac_rule_info_send(TALLOC_CTX *mem_ctx,
              *
              * As, here, it's the first case happening, let's return EINVAL.
              */
-            DEBUG(SSSDBG_CRIT_FAILURE, "No search base found\n");
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "No search base found\n");
             ret = EINVAL;
         }
         goto immediate;
@@ -250,7 +250,7 @@ ipa_hbac_rule_info_done(struct tevent_req *subreq)
                                 &rule_count,
                                 &rules);
     if (ret != EOK) {
-        DEBUG(SSSDBG_MINOR_FAILURE, "Could not retrieve HBAC rules\n");
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "Could not retrieve HBAC rules\n");
         goto fail;
     }
 
@@ -281,7 +281,7 @@ ipa_hbac_rule_info_done(struct tevent_req *subreq)
     } else if (ret != EOK) {
         goto fail;
     } else if (ret == EOK && state->rule_count == 0) {
-        DEBUG(SSSDBG_TRACE_FUNC, "No rules apply to this host\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "No rules apply to this host\n");
         tevent_req_error(req, ENOENT);
         return;
     }

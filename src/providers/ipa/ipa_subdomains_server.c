@@ -445,7 +445,7 @@ static struct tevent_req *ipa_getkeytab_send(TALLOC_CTX *mem_ctx,
         goto done;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC,
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
           "Retrieving keytab for %s from %s into %s using ccache %s\n",
           principal, server, keytab, ccache);
 
@@ -457,7 +457,7 @@ static struct tevent_req *ipa_getkeytab_send(TALLOC_CTX *mem_ctx,
         ret = child_handler_setup(ev, child_pid, ipa_getkeytab_done, req,
                                   &state->child_ctx);
         if (ret != EOK) {
-            DEBUG(SSSDBG_OP_FAILURE, "Could not set up child handlers [%d]: %s\n",
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Could not set up child handlers [%d]: %s\n",
                 ret, sss_strerror(ret));
             ret = ERR_IPA_GETKEYTAB_FAILED;
             goto done;
@@ -477,7 +477,7 @@ static struct tevent_req *ipa_getkeytab_send(TALLOC_CTX *mem_ctx,
          */
     } else { /* error */
         ret = errno;
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "fork failed [%d][%s].\n", ret, sss_strerror(ret));
         goto done;
     }
@@ -554,14 +554,14 @@ static void ipa_getkeytab_done(int child_status,
     state->child_status = child_status;
 
     if (WIFEXITED(child_status) && WEXITSTATUS(child_status) != 0) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "ipa-getkeytab failed with status [%d]\n", child_status);
         tevent_req_error(req, ERR_IPA_GETKEYTAB_FAILED);
         return;
     }
 
     if (WIFSIGNALED(child_status)) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "ipa-getkeytab was terminated by signal [%d]\n",
                WTERMSIG(child_status));
         tevent_req_error(req, ERR_IPA_GETKEYTAB_FAILED);
@@ -580,7 +580,7 @@ static void ipa_getkeytab_timeout(struct tevent_context *ev,
     struct ipa_getkeytab_state *state =
             tevent_req_data(req, struct ipa_getkeytab_state);
 
-    DEBUG(SSSDBG_CRIT_FAILURE, "Timeout reached for retrieving keytab from IPA server\n");
+    BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Timeout reached for retrieving keytab from IPA server\n");
     child_handler_destroy(state->child_ctx);
     state->child_ctx = NULL;
     state->child_status = ETIMEDOUT;
@@ -592,7 +592,7 @@ static errno_t ipa_getkeytab_recv(struct tevent_req *req, int *child_status)
     struct ipa_getkeytab_state *state =
             tevent_req_data(req, struct ipa_getkeytab_state);
 
-    DEBUG(SSSDBG_TRACE_INTERNAL,
+    BE_REQ_DEBUG(SSSDBG_TRACE_INTERNAL, req,
           "ipa-getkeytab status %d\n", state->child_status);
     if (child_status) {
         *child_status = state->child_status;
@@ -676,7 +676,7 @@ ipa_server_trusted_dom_setup_send(TALLOC_CTX *mem_ctx,
 
     /* Trusts are only established with forest roots */
     if (subdom->forest_root == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Subdomain %s has no forest root?\n", subdom->name);
         ret = ERR_TRUST_FOREST_UNKNOWN;
         goto immediate;
@@ -692,7 +692,7 @@ ipa_server_trusted_dom_setup_send(TALLOC_CTX *mem_ctx,
         goto immediate;
     }
 
-    DEBUG(SSSDBG_TRACE_LIBS,
+    BE_REQ_DEBUG(SSSDBG_TRACE_LIBS, req,
           "Trust direction of subdom %s from forest %s is: %s\n",
           subdom->name, state->forest,
           ipa_trust_dir2str(state->direction));
@@ -713,7 +713,7 @@ ipa_server_trusted_dom_setup_send(TALLOC_CTX *mem_ctx,
         }
     } else {
         /* Even unset is an error at this point */
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Subdomain %s has trust direction %d\n",
               subdom->name, subdom->trust_direction);
         ret = ERR_TRUST_NOT_SUPPORTED;
@@ -721,7 +721,7 @@ ipa_server_trusted_dom_setup_send(TALLOC_CTX *mem_ctx,
 
 immediate:
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Could not add trusted subdomain %s from forest %s\n",
               subdom->name, state->forest);
         tevent_req_error(req, ret);
@@ -742,24 +742,24 @@ static errno_t ipa_server_trusted_dom_setup_1way(struct tevent_req *req)
 
     state->keytab = forest_keytab(state, state->forest);
     if (state->keytab == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Cannot set up ipa_get_keytab\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Cannot set up ipa_get_keytab\n");
         return EIO;
     }
 
     state->new_keytab = talloc_asprintf(state, "%sXXXXXX", state->keytab);
     if (state->new_keytab == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "Cannot set up ipa_get_keytab. talloc_asprintf() failed\n");
         return ENOMEM;
     }
 
     ret = sss_unique_filename(state, state->new_keytab);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Cannot create temporary keytab name\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Cannot create temporary keytab name\n");
         return ret;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC,
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
           "Will re-fetch keytab for %s\n", state->subdom->name);
 
     hostname = dp_opt_get_string(state->id_ctx->ipa_options->basic,
@@ -769,7 +769,7 @@ static errno_t ipa_server_trusted_dom_setup_1way(struct tevent_req *req)
                                              state->forest_realm,
                                              state->subdom);
     if (state->principal == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Cannot set up ipa_get_keytab\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Cannot set up ipa_get_keytab\n");
         return EIO;
     }
 
@@ -798,9 +798,9 @@ static void ipa_server_trust_1way_kt_done(struct tevent_req *subreq)
     if (ret != EOK) {
         /* Do not fail here, but try to check and use the previous keytab,
          * if any */
-        DEBUG(SSSDBG_MINOR_FAILURE, "ipa_getkeytab_recv failed: %d\n", ret);
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "ipa_getkeytab_recv failed: %d\n", ret);
     } else {
-        DEBUG(SSSDBG_TRACE_FUNC,
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
               "Keytab successfully retrieved to %s\n", state->new_keytab);
     }
 
@@ -811,24 +811,24 @@ static void ipa_server_trust_1way_kt_done(struct tevent_req *subreq)
         ret = rename(state->new_keytab, state->keytab);
         if (ret == -1) {
             ret = errno;
-            DEBUG(SSSDBG_CRIT_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
                 "rename failed [%d][%s].\n", ret, strerror(ret));
             tevent_req_error(req, ret);
             return;
         }
-        DEBUG(SSSDBG_TRACE_INTERNAL, "Keytab renamed to %s\n", state->keytab);
+        BE_REQ_DEBUG(SSSDBG_TRACE_INTERNAL, req, "Keytab renamed to %s\n", state->keytab);
     } else if (ret != EOK) {
-        DEBUG(SSSDBG_MINOR_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
               "Trying to recover and use the previous keytab, if available\n");
         ret = ipa_check_keytab(state->keytab,
                                state->id_ctx->server_mode->kt_owner_uid,
                                state->id_ctx->server_mode->kt_owner_gid);
         if (ret == EOK) {
-            DEBUG(SSSDBG_TRACE_FUNC,
+            BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
                   "The previous keytab %s contains the expected principal\n",
                   state->keytab);
         } else {
-            DEBUG(SSSDBG_OP_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
                   "Cannot use the old keytab: %d\n", ret);
             /* Nothing we can do now */
             tevent_req_error(req, ret);
@@ -836,10 +836,10 @@ static void ipa_server_trust_1way_kt_done(struct tevent_req *subreq)
         }
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC,
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
           "Keytab %s contains the expected principals\n", state->new_keytab);
 
-    DEBUG(SSSDBG_TRACE_FUNC,
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
           "Established trust context for %s\n", state->subdom->name);
     tevent_req_done(req);
 }
@@ -1009,7 +1009,7 @@ static errno_t ipa_server_create_trusts_ctx(struct tevent_req *req)
 
     ret = ipa_ad_ctx_new(state->be_ctx, state->id_ctx, state->domiter, &ad_id_ctx);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Cannot create ad_id_ctx for subdomain %s\n", state->domiter->name);
         return ret;
     }
@@ -1096,7 +1096,7 @@ static void create_trusts_at_startup(struct tevent_context *ev,
     req = ipa_server_create_trusts_send(state, state->ev, state->be_ctx,
                                         state->id_ctx, state->parent);
     if (req == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "ipa_server_create_trusts_send failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "ipa_server_create_trusts_send failed.\n");
         talloc_free(state);
         return;
     }

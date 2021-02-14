@@ -149,23 +149,23 @@ static struct tevent_req *ipa_s2n_exop_send(TALLOC_CTX *mem_ctx,
     state->retoid = NULL;
     state->retdata = NULL;
 
-    DEBUG(SSSDBG_TRACE_FUNC, "Executing extended operation\n");
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Executing extended operation\n");
 
     ret = ldap_extended_operation(state->sh->ldap,
                                   extdom_protocol_to_oid(protocol),
                                   bv, NULL, NULL, &msgid);
     if (ret == -1 || msgid == -1) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "ldap_extended_operation failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "ldap_extended_operation failed\n");
         ret = ERR_NETWORK_IO;
         goto fail;
     }
-    DEBUG(SSSDBG_TRACE_INTERNAL, "ldap_extended_operation sent, msgid = %d\n",
+    BE_REQ_DEBUG(SSSDBG_TRACE_INTERNAL, req, "ldap_extended_operation sent, msgid = %d\n",
                                   msgid);
 
     ret = sdap_op_add(state, ev, state->sh, msgid, ipa_s2n_exop_done, req,
                       timeout, &state->op);
     if (ret) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Failed to set up operation!\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Failed to set up operation!\n");
         ret = ERR_INTERNAL;
         goto fail;
     }
@@ -200,13 +200,13 @@ static void ipa_s2n_exop_done(struct sdap_op *op,
                             &result, NULL, &errmsg, NULL,
                             NULL, 0);
     if (ret != LDAP_SUCCESS) {
-        DEBUG(SSSDBG_OP_FAILURE, "ldap_parse_result failed (%d)\n",
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "ldap_parse_result failed (%d)\n",
                                  state->op->msgid);
         ret = ERR_NETWORK_IO;
         goto done;
     }
 
-    DEBUG(result == LDAP_SUCCESS ? SSSDBG_TRACE_FUNC : SSSDBG_OP_FAILURE,
+    BE_REQ_DEBUG(result == LDAP_SUCCESS ? SSSDBG_TRACE_FUNC : SSSDBG_OP_FAILURE, req,
           "ldap_extended_operation result: %s(%d), %s.\n",
           sss_ldap_err2string(result), result, errmsg);
 
@@ -214,7 +214,7 @@ static void ipa_s2n_exop_done(struct sdap_op *op,
         if (result == LDAP_NO_SUCH_OBJECT) {
             ret = ENOENT;
         } else {
-            DEBUG(SSSDBG_OP_FAILURE, "ldap_extended_operation failed, server " \
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "ldap_extended_operation failed, server " \
                                      "logs might contain more details.\n");
             ret = ERR_NETWORK_IO;
         }
@@ -224,27 +224,27 @@ static void ipa_s2n_exop_done(struct sdap_op *op,
     ret = ldap_parse_extended_result(state->sh->ldap, reply->msg,
                                       &retoid, &retdata, 0);
     if (ret != LDAP_SUCCESS) {
-        DEBUG(SSSDBG_OP_FAILURE, "ldap_parse_extendend_result failed (%d)\n",
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "ldap_parse_extendend_result failed (%d)\n",
                                  ret);
         ret = ERR_NETWORK_IO;
         goto done;
     }
     if (retdata == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Missing exop result data.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Missing exop result data.\n");
         ret = EINVAL;
         goto done;
     }
 
     state->retoid = talloc_strdup(state, retoid);
     if (state->retoid == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "talloc_strdup failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "talloc_strdup failed.\n");
         ret = ENOMEM;
         goto done;
     }
 
     state->retdata = talloc(state, struct berval);
     if (state->retdata == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "talloc failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "talloc failed.\n");
         ret = ENOMEM;
         goto done;
     }
@@ -252,7 +252,7 @@ static void ipa_s2n_exop_done(struct sdap_op *op,
     state->retdata->bv_val = talloc_memdup(state->retdata, retdata->bv_val,
                                            retdata->bv_len);
     if (state->retdata->bv_val == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "talloc_memdup failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "talloc_memdup failed.\n");
         ret = ENOMEM;
         goto done;
     }
@@ -1217,7 +1217,7 @@ static struct tevent_req *ipa_s2n_get_list_send(TALLOC_CTX *mem_ctx,
 
     if ((entry_type == BE_REQ_BY_SECID && list_type != REQ_INP_SECID)
            || (entry_type != BE_REQ_BY_SECID && list_type == REQ_INP_SECID)) {
-        DEBUG(SSSDBG_OP_FAILURE, "Invalid parameter combination [%d][%d].\n",
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Invalid parameter combination [%d][%d].\n",
                                  request_type, list_type);
         ret = EINVAL;
         goto done;
@@ -1241,7 +1241,7 @@ static struct tevent_req *ipa_s2n_get_list_send(TALLOC_CTX *mem_ctx,
 
     ret = ipa_s2n_get_list_step(req);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "ipa_s2n_get_list_step failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "ipa_s2n_get_list_step failed.\n");
         goto done;
     }
 
@@ -1275,7 +1275,7 @@ static errno_t ipa_s2n_get_list_step(struct tevent_req *req)
         ret = sss_parse_name(state, state->dom->names, state->list[state->list_idx],
                              &domain_name, &short_name);
         if (ret != EOK) {
-            DEBUG(SSSDBG_CRIT_FAILURE, "Unable to parse name '%s' [%d]: %s\n",
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Unable to parse name '%s' [%d]: %s\n",
                                         state->list[state->list_idx],
                                         ret, sss_strerror(ret));
             return ret;
@@ -1285,7 +1285,7 @@ static errno_t ipa_s2n_get_list_step(struct tevent_req *req)
             state->obj_domain = find_domain_by_name(parent_domain,
                                                     domain_name, true);
             if (state->obj_domain == NULL) {
-                DEBUG(SSSDBG_OP_FAILURE, "find_domain_by_name failed.\n");
+                BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "find_domain_by_name failed.\n");
                 return ENOMEM;
             }
         } else {
@@ -1296,7 +1296,7 @@ static errno_t ipa_s2n_get_list_step(struct tevent_req *req)
 
         if (strcmp(state->obj_domain->name,
             state->ipa_ctx->sdap_id_ctx->be->domain->name) == 0) {
-            DEBUG(SSSDBG_TRACE_INTERNAL,
+            BE_REQ_DEBUG(SSSDBG_TRACE_INTERNAL, req,
                   "Looking up IPA object [%s] from LDAP.\n",
                   state->list[state->list_idx]);
             ret = get_dp_id_data_for_user_name(state,
@@ -1304,7 +1304,7 @@ static errno_t ipa_s2n_get_list_step(struct tevent_req *req)
                                                state->obj_domain->name,
                                                &ar);
             if (ret != EOK) {
-                DEBUG(SSSDBG_OP_FAILURE,
+                BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
                       "Failed to create lookup date for IPA object [%s].\n",
                       state->list[state->list_idx]);
                 return ret;
@@ -1314,7 +1314,7 @@ static errno_t ipa_s2n_get_list_step(struct tevent_req *req)
             subreq = ipa_id_get_account_info_send(state, state->ev,
                                                   state->ipa_ctx, ar);
             if (subreq == NULL) {
-                DEBUG(SSSDBG_OP_FAILURE,
+                BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
                       "ipa_id_get_account_info_send failed.\n");
                 return ENOMEM;
             }
@@ -1329,7 +1329,7 @@ static errno_t ipa_s2n_get_list_step(struct tevent_req *req)
         id = strtouint32(state->list[state->list_idx], &endptr, 10);
         if (errno != 0 || *endptr != '\0'
                 || (state->list[state->list_idx] == endptr)) {
-            DEBUG(SSSDBG_OP_FAILURE, "strtouint32 failed.\n");
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "strtouint32 failed.\n");
             return EINVAL;
         }
         state->req_input.inp.id = id;
@@ -1341,7 +1341,7 @@ static errno_t ipa_s2n_get_list_step(struct tevent_req *req)
         state->obj_domain = find_domain_by_sid(parent_domain,
                                                state->req_input.inp.secid);
         if (state->obj_domain == NULL) {
-            DEBUG(SSSDBG_OP_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
                   "find_domain_by_sid failed for SID [%s].\n",
                   state->req_input.inp.secid);
             return EINVAL;
@@ -1349,7 +1349,7 @@ static errno_t ipa_s2n_get_list_step(struct tevent_req *req)
 
         break;
     default:
-        DEBUG(SSSDBG_OP_FAILURE, "Unexpected input type [%d].\n",
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Unexpected input type [%d].\n",
                                  state->req_input.type);
         return EINVAL;
     }
@@ -1358,18 +1358,18 @@ static errno_t ipa_s2n_get_list_step(struct tevent_req *req)
                              state->request_type, &state->req_input,
                              state->protocol, &bv_req);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "s2n_encode_request failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "s2n_encode_request failed.\n");
         return ret;
     }
 
     if (state->request_type == REQ_FULL_WITH_MEMBERS && state->protocol == EXTDOM_V0) {
-        DEBUG(SSSDBG_OP_FAILURE, "ipa_s2n_exop failed, protocol > V0 needed for this request.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "ipa_s2n_exop failed, protocol > V0 needed for this request.\n");
         return EINVAL;
     }
 
     if (state->req_input.type == REQ_INP_NAME
             && state->req_input.inp.name != NULL) {
-        DEBUG(SSSDBG_TRACE_FUNC,
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
               "Sending request_type: [%s] for object [%s].\n",
               ipa_s2n_reqtype2str(state->request_type),
               state->list[state->list_idx]);
@@ -1378,7 +1378,7 @@ static errno_t ipa_s2n_get_list_step(struct tevent_req *req)
     subreq = ipa_s2n_exop_send(state, state->ev, state->sh, state->protocol,
                                state->exop_timeout, bv_req);
     if (subreq == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "ipa_s2n_exop_send failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "ipa_s2n_exop_send failed.\n");
         return ENOMEM;
     }
     tevent_req_set_callback(subreq, ipa_s2n_get_list_next, req);
@@ -1401,7 +1401,7 @@ static void ipa_s2n_get_list_next(struct tevent_req *subreq)
     ret = ipa_s2n_exop_recv(subreq, state, &retoid, &retdata);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "s2n exop request failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "s2n exop request failed.\n");
         goto fail;
     }
 
@@ -1409,11 +1409,11 @@ static void ipa_s2n_get_list_next(struct tevent_req *subreq)
     ret = s2n_response_to_attrs(state, state->dom, retoid, retdata,
                                 &state->attrs);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "s2n_response_to_attrs failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "s2n_response_to_attrs failed.\n");
         goto fail;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "Received [%s] attributes from IPA server.\n",
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Received [%s] attributes from IPA server.\n",
                              state->attrs->a.name);
 
     if (is_default_view(state->ipa_ctx->view_name)) {
@@ -1421,7 +1421,7 @@ static void ipa_s2n_get_list_next(struct tevent_req *subreq)
         if (ret == EOK) {
             tevent_req_done(req);
         } else if (ret != EAGAIN) {
-            DEBUG(SSSDBG_OP_FAILURE, "ipa_s2n_get_list_save_step failed.\n");
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "ipa_s2n_get_list_save_step failed.\n");
             goto fail;
         }
 
@@ -1431,7 +1431,7 @@ static void ipa_s2n_get_list_next(struct tevent_req *subreq)
     ret = sysdb_attrs_get_string(state->attrs->sysdb_attrs, SYSDB_SID_STR,
                                  &sid_str);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "Object [%s] has no SID, please check the "
               "ipaNTSecurityIdentifier attribute on the server-side",
               state->attrs->a.name);
@@ -1440,7 +1440,7 @@ static void ipa_s2n_get_list_next(struct tevent_req *subreq)
 
     ret = get_dp_id_data_for_sid(state, sid_str, state->obj_domain->name, &ar);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "get_dp_id_data_for_sid failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "get_dp_id_data_for_sid failed.\n");
         goto fail;
     }
 
@@ -1452,7 +1452,7 @@ static void ipa_s2n_get_list_next(struct tevent_req *subreq)
                            state->ipa_ctx->view_name,
                            ar);
     if (subreq == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "ipa_get_ad_override_send failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "ipa_get_ad_override_send failed.\n");
         ret = ENOMEM;
         goto fail;
     }
@@ -1477,7 +1477,7 @@ static void ipa_s2n_get_list_ipa_next(struct tevent_req *subreq)
     ret = ipa_id_get_account_info_recv(subreq, &dp_error);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "ipa_id_get_account_info failed: %d %d\n", ret,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "ipa_id_get_account_info failed: %d %d\n", ret,
                                  dp_error);
         goto done;
     }
@@ -1490,7 +1490,7 @@ static void ipa_s2n_get_list_ipa_next(struct tevent_req *subreq)
 
     ret = ipa_s2n_get_list_step(req);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "ipa_s2n_get_list_step failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "ipa_s2n_get_list_step failed.\n");
         goto done;
     }
 
@@ -1512,7 +1512,7 @@ static void ipa_s2n_get_list_get_override_done(struct tevent_req *subreq)
     ret = ipa_get_ad_override_recv(subreq, NULL, state, &state->override_attrs);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "IPA override lookup failed: %d\n", ret);
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "IPA override lookup failed: %d\n", ret);
         goto fail;
     }
 
@@ -1520,7 +1520,7 @@ static void ipa_s2n_get_list_get_override_done(struct tevent_req *subreq)
     if (ret == EOK) {
         tevent_req_done(req);
     } else if (ret != EAGAIN) {
-        DEBUG(SSSDBG_OP_FAILURE, "ipa_s2n_get_list_save_step failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "ipa_s2n_get_list_save_step failed.\n");
         goto fail;
     }
 
@@ -1542,7 +1542,7 @@ static errno_t ipa_s2n_get_list_save_step(struct tevent_req *req)
                                state->override_attrs, state->mapped_attrs,
                                false);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "ipa_s2n_save_objects failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "ipa_s2n_save_objects failed.\n");
         return ret;
     }
 
@@ -1553,7 +1553,7 @@ static errno_t ipa_s2n_get_list_save_step(struct tevent_req *req)
 
     ret = ipa_s2n_get_list_step(req);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "ipa_s2n_get_list_step failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "ipa_s2n_get_list_step failed.\n");
         return ret;
     }
 
@@ -1626,7 +1626,7 @@ struct tevent_req *ipa_s2n_get_acct_info_send(TALLOC_CTX *mem_ctx,
     } else if (state->protocol == EXTDOM_V0) {
         state->request_type = REQ_FULL;
     } else {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Extdom not supported on the server, "
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Extdom not supported on the server, "
                               "cannot resolve objects from trusted domains.\n");
         ret = EIO;
         goto fail;
@@ -1645,7 +1645,7 @@ struct tevent_req *ipa_s2n_get_acct_info_send(TALLOC_CTX *mem_ctx,
 
     if (DEBUG_IS_SET(SSSDBG_TRACE_FUNC)) {
         input = ipa_s2n_reqinp2str(state, req_input);
-        DEBUG(SSSDBG_TRACE_FUNC,
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
               "Sending request_type: [%s] for trust user [%s] to IPA server\n",
               ipa_s2n_reqtype2str(state->request_type),
               input);
@@ -1655,7 +1655,7 @@ struct tevent_req *ipa_s2n_get_acct_info_send(TALLOC_CTX *mem_ctx,
     subreq = ipa_s2n_exop_send(state, state->ev, state->sh, state->protocol,
                                state->exop_timeout, bv_req);
     if (subreq == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "ipa_s2n_exop_send failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "ipa_s2n_exop_send failed.\n");
         ret = ENOMEM;
         goto fail;
     }
@@ -2029,13 +2029,13 @@ static void ipa_s2n_get_user_done(struct tevent_req *subreq)
                                             state->entry_type,
                                             state->req_input);
             if (ret != EOK) {
-                DEBUG(SSSDBG_OP_FAILURE,
+                BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
                       "s2n_remove_missing_object failed [%d].\n", ret);
             }
         } else {
-            DEBUG(SSSDBG_OP_FAILURE, "s2n exop request failed.\n");
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "s2n exop request failed.\n");
             if (state->req_input->type == REQ_INP_CERT) {
-                DEBUG(SSSDBG_OP_FAILURE,
+                BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
                       "Maybe the server does not support lookups by "
                       "certificates.\n");
             }
@@ -2049,14 +2049,14 @@ static void ipa_s2n_get_user_done(struct tevent_req *subreq)
         ret = s2n_response_to_attrs(state, state->dom, retoid, retdata,
                                     &attrs);
         if (ret != EOK) {
-            DEBUG(SSSDBG_OP_FAILURE, "s2n_response_to_attrs failed.\n");
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "s2n_response_to_attrs failed.\n");
             goto done;
         }
 
         if (!(strcasecmp(state->dom->name, attrs->domain_name) == 0 ||
               (state->dom->flat_name != NULL &&
                strcasecmp(state->dom->flat_name, attrs->domain_name) == 0))) {
-            DEBUG(SSSDBG_OP_FAILURE, "Unexpected domain name returned, "
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Unexpected domain name returned, "
                                       "expected [%s] or [%s], got [%s].\n",
                          state->dom->name,
                          state->dom->flat_name == NULL ? "" :
@@ -2073,11 +2073,11 @@ static void ipa_s2n_get_user_done(struct tevent_req *subreq)
             if (DEBUG_IS_SET(SSSDBG_TRACE_FUNC)) {
                 size_t c;
 
-                DEBUG(SSSDBG_TRACE_FUNC, "Received [%zu] groups in group list "
+                BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Received [%zu] groups in group list "
                                          "from IPA Server\n", attrs->ngroups);
 
                 for (c = 0; c < attrs->ngroups; c++) {
-                    DEBUG(SSSDBG_TRACE_FUNC, "[%s].\n", attrs->groups[c]);
+                    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "[%s].\n", attrs->groups[c]);
                 }
             }
 
@@ -2088,7 +2088,7 @@ static void ipa_s2n_get_user_done(struct tevent_req *subreq)
                                     attrs->ngroups, attrs->groups,
                                     &group_dn_list, &missing_list);
             if (ret != EOK) {
-                DEBUG(SSSDBG_OP_FAILURE, "get_group_dn_list failed.\n");
+                BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "get_group_dn_list failed.\n");
                 goto done;
             }
 
@@ -2101,7 +2101,7 @@ static void ipa_s2n_get_user_done(struct tevent_req *subreq)
                                                  REQ_INP_NAME,
                                                  missing_list, NULL);
                 if (subreq == NULL) {
-                    DEBUG(SSSDBG_OP_FAILURE,
+                    BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
                           "ipa_s2n_get_list_send failed.\n");
                     ret = ENOMEM;
                     goto done;
@@ -2118,7 +2118,7 @@ static void ipa_s2n_get_user_done(struct tevent_req *subreq)
                                   NULL, attrs->a.group.gr_mem, state,
                                   &missing_list);
             if (ret != EOK) {
-                DEBUG(SSSDBG_OP_FAILURE, "process_members failed.\n");
+                BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "process_members failed.\n");
                 goto done;
             }
 
@@ -2131,7 +2131,7 @@ static void ipa_s2n_get_user_done(struct tevent_req *subreq)
                                                  REQ_INP_NAME,
                                                  missing_list, NULL);
                 if (subreq == NULL) {
-                    DEBUG(SSSDBG_OP_FAILURE,
+                    BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
                           "ipa_s2n_get_list_send failed.\n");
                     ret = ENOMEM;
                     goto done;
@@ -2162,7 +2162,7 @@ static void ipa_s2n_get_user_done(struct tevent_req *subreq)
         subreq = ipa_s2n_exop_send(state, state->ev, state->sh, false,
                                    state->exop_timeout, bv_req);
         if (subreq == NULL) {
-            DEBUG(SSSDBG_OP_FAILURE, "ipa_s2n_exop_send failed.\n");
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "ipa_s2n_exop_send failed.\n");
             ret = ENOMEM;
             goto done;
         }
@@ -2174,7 +2174,7 @@ static void ipa_s2n_get_user_done(struct tevent_req *subreq)
         ret = s2n_response_to_attrs(state, state->dom, retoid, retdata,
                                     &state->simple_attrs);
         if (ret != EOK) {
-            DEBUG(SSSDBG_OP_FAILURE, "s2n_response_to_attrs failed.\n");
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "s2n_response_to_attrs failed.\n");
             goto done;
         }
 
@@ -2189,7 +2189,7 @@ static void ipa_s2n_get_user_done(struct tevent_req *subreq)
 
             state->mapped_attrs = sysdb_new_attrs(state);
             if (state->mapped_attrs == NULL) {
-                DEBUG(SSSDBG_OP_FAILURE, "sysdb_new_attrs failed.\n");
+                BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sysdb_new_attrs failed.\n");
                 ret = ENOMEM;
                 goto done;
             }
@@ -2198,7 +2198,7 @@ static void ipa_s2n_get_user_done(struct tevent_req *subreq)
                                               SYSDB_USER_MAPPED_CERT,
                                               state->req_input->inp.cert);
             if (ret != EOK) {
-                DEBUG(SSSDBG_OP_FAILURE, "sysdb_attrs_add_base64_blob failed.\n");
+                BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sysdb_attrs_add_base64_blob failed.\n");
                 goto done;
             }
 
@@ -2211,7 +2211,7 @@ static void ipa_s2n_get_user_done(struct tevent_req *subreq)
                                            state->simple_attrs->name_list,
                                            state->mapped_attrs);
             if (subreq == NULL) {
-                DEBUG(SSSDBG_OP_FAILURE,
+                BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
                       "ipa_s2n_get_list_send failed.\n");
                 ret = ENOMEM;
                 goto done;
@@ -2224,14 +2224,14 @@ static void ipa_s2n_get_user_done(struct tevent_req *subreq)
 
         break;
     default:
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "Unexpected request type %d.\n", state->request_type);
         ret = EINVAL;
         goto done;
     }
 
     if (state->attrs == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Missing data of full request.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Missing data of full request.\n");
         ret = EINVAL;
         goto done;
     }
@@ -2247,7 +2247,7 @@ static void ipa_s2n_get_user_done(struct tevent_req *subreq)
         sid_str = state->req_input->inp.secid;
         ret = EOK;
     } else {
-        DEBUG(SSSDBG_TRACE_FUNC, "No SID available.\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "No SID available.\n");
         ret = ENOENT;
     }
 
@@ -2255,13 +2255,13 @@ static void ipa_s2n_get_user_done(struct tevent_req *subreq)
         ret = ipa_s2n_save_objects(state->dom, state->req_input, state->attrs,
                                    state->simple_attrs, NULL, NULL, NULL, true);
         if (ret != EOK) {
-            DEBUG(SSSDBG_OP_FAILURE, "ipa_s2n_save_objects failed.\n");
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "ipa_s2n_save_objects failed.\n");
             goto done;
         }
     } else if (ret == EOK) {
         ret = get_dp_id_data_for_sid(state, sid_str, state->dom->name, &ar);
         if (ret != EOK) {
-            DEBUG(SSSDBG_OP_FAILURE, "get_dp_id_data_for_sid failed.\n");
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "get_dp_id_data_for_sid failed.\n");
             goto done;
         }
 
@@ -2273,7 +2273,7 @@ static void ipa_s2n_get_user_done(struct tevent_req *subreq)
                            state->ipa_ctx->view_name,
                            ar);
         if (subreq == NULL) {
-            DEBUG(SSSDBG_OP_FAILURE, "ipa_get_ad_override_send failed.\n");
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "ipa_get_ad_override_send failed.\n");
             ret = ENOMEM;
             goto done;
         }
@@ -2282,7 +2282,7 @@ static void ipa_s2n_get_user_done(struct tevent_req *subreq)
 
         return;
     } else {
-        DEBUG(SSSDBG_OP_FAILURE, "sysdb_attrs_get_string failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sysdb_attrs_get_string failed.\n");
         goto done;
     }
 
@@ -2931,7 +2931,7 @@ static void ipa_s2n_get_list_done(struct tevent_req  *subreq)
     ret = ipa_s2n_get_list_recv(subreq);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "s2n get_fqlist request failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "s2n get_fqlist request failed.\n");
         tevent_req_error(req, ret);
         return;
     }
@@ -2952,19 +2952,19 @@ static void ipa_s2n_get_list_done(struct tevent_req  *subreq)
         ret = ipa_s2n_save_objects(state->dom, state->req_input, state->attrs,
                                    state->simple_attrs, NULL, NULL, NULL, true);
         if (ret != EOK) {
-            DEBUG(SSSDBG_OP_FAILURE, "ipa_s2n_save_objects failed.\n");
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "ipa_s2n_save_objects failed.\n");
             goto fail;
         }
         tevent_req_done(req);
         return;
     } else if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "sysdb_attrs_get_string failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sysdb_attrs_get_string failed.\n");
         goto fail;
     }
 
     ret = get_dp_id_data_for_sid(state, sid_str, state->dom->name, &ar);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "get_dp_id_data_for_sid failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "get_dp_id_data_for_sid failed.\n");
         goto fail;
     }
 
@@ -2978,7 +2978,7 @@ static void ipa_s2n_get_list_done(struct tevent_req  *subreq)
                            state->ipa_ctx->view_name,
                            ar);
         if (subreq == NULL) {
-            DEBUG(SSSDBG_OP_FAILURE, "ipa_get_ad_override_send failed.\n");
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "ipa_get_ad_override_send failed.\n");
             ret = ENOMEM;
             goto fail;
         }
@@ -2990,7 +2990,7 @@ static void ipa_s2n_get_list_done(struct tevent_req  *subreq)
                                    state->ipa_ctx->view_name,
                                    state->override_attrs, NULL, true);
         if (ret != EOK) {
-            DEBUG(SSSDBG_OP_FAILURE, "ipa_s2n_save_objects failed.\n");
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "ipa_s2n_save_objects failed.\n");
             tevent_req_error(req, ret);
             return;
         }
@@ -3017,7 +3017,7 @@ static void ipa_s2n_get_user_get_override_done(struct tevent_req *subreq)
     ret = ipa_get_ad_override_recv(subreq, NULL, state, &override_attrs);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "IPA override lookup failed: %d\n", ret);
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "IPA override lookup failed: %d\n", ret);
         tevent_req_error(req, ret);
         return;
     }
@@ -3026,7 +3026,7 @@ static void ipa_s2n_get_user_get_override_done(struct tevent_req *subreq)
                                state->simple_attrs, state->ipa_ctx->view_name,
                                override_attrs, NULL, true);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "ipa_s2n_save_objects failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "ipa_s2n_save_objects failed.\n");
         tevent_req_error(req, ret);
         return;
     }
@@ -3075,7 +3075,7 @@ struct tevent_req *ipa_get_subdom_acct_process_pac_send(TALLOC_CTX *mem_ctx,
     req = tevent_req_create(mem_ctx, &state,
                             struct ipa_get_subdom_acct_process_pac_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "tevent_req_create failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "tevent_req_create failed.\n");
         return NULL;
     }
 
@@ -3089,7 +3089,7 @@ struct tevent_req *ipa_get_subdom_acct_process_pac_send(TALLOC_CTX *mem_ctx,
                                      &user_sid, &primary_group_sid,
                                      &num_sids, &group_sids);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "ad_get_pac_data_from_user_entry failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "ad_get_pac_data_from_user_entry failed.\n");
         goto done;
     }
 
@@ -3100,7 +3100,7 @@ struct tevent_req *ipa_get_subdom_acct_process_pac_send(TALLOC_CTX *mem_ctx,
                                                 &state->num_cached_groups,
                                                 &state->cached_groups);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "sdap_ad_tokengroups_get_posix_members failed.\n");
         goto done;
     }
@@ -3112,7 +3112,7 @@ struct tevent_req *ipa_get_subdom_acct_process_pac_send(TALLOC_CTX *mem_ctx,
                                                  state->dom,
                                                  state->cached_groups);
         if (ret != EOK) {
-            DEBUG(SSSDBG_MINOR_FAILURE, "Membership update failed [%d]: %s\n",
+            BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "Membership update failed [%d]: %s\n",
                                          ret, strerror(ret));
         }
 
@@ -3127,7 +3127,7 @@ struct tevent_req *ipa_get_subdom_acct_process_pac_send(TALLOC_CTX *mem_ctx,
                                BE_REQ_BY_SECID, REQ_FULL, REQ_INP_SECID,
                                state->missing_sids, NULL);
     if (subreq == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "ipa_s2n_get_list_send failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "ipa_s2n_get_list_send failed.\n");
         ret = ENOMEM;
         goto done;
     }
@@ -3159,7 +3159,7 @@ static void ipa_get_subdom_acct_process_pac_done(struct tevent_req *subreq)
     ret = ipa_s2n_get_list_recv(subreq);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "s2n get_fqlist request failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "s2n get_fqlist request failed.\n");
         tevent_req_error(req, ret);
         return;
     }
@@ -3172,7 +3172,7 @@ static void ipa_get_subdom_acct_process_pac_done(struct tevent_req *subreq)
                                                 &num_cached_groups,
                                                 &cached_groups);
     if (ret != EOK){
-        DEBUG(SSSDBG_MINOR_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
               "sdap_ad_tokengroups_get_posix_members failed [%d]: %s\n",
               ret, strerror(ret));
         goto done;
@@ -3194,7 +3194,7 @@ static void ipa_get_subdom_acct_process_pac_done(struct tevent_req *subreq)
                                              state->dom,
                                              state->cached_groups);
     if (ret != EOK) {
-        DEBUG(SSSDBG_MINOR_FAILURE, "Membership update failed [%d]: %s\n",
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "Membership update failed [%d]: %s\n",
                                      ret, strerror(ret));
         goto done;
     }

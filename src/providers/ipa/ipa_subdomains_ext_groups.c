@@ -446,14 +446,14 @@ struct tevent_req *ipa_get_ad_memberships_send(TALLOC_CTX *mem_ctx,
     if (((ar->entry_type & BE_REQ_TYPE_MASK) != BE_REQ_INITGROUPS
             && (ar->entry_type & BE_REQ_TYPE_MASK) != BE_REQ_USER)
             || ar->filter_type != BE_FILTER_NAME) {
-        DEBUG(SSSDBG_OP_FAILURE, "Unsupported request type.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Unsupported request type.\n");
         ret = EINVAL;
         goto done;
     }
 
     state->user_name = talloc_strdup(state, ar->filter_value);
     if (state->user_name == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "talloc_Strdup failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "talloc_Strdup failed.\n");
         ret = ENOMEM;
         goto done;
     }
@@ -461,7 +461,7 @@ struct tevent_req *ipa_get_ad_memberships_send(TALLOC_CTX *mem_ctx,
     state->sdap_op = sdap_id_op_create(state,
                                        state->sdap_id_ctx->conn->conn_cache);
     if (state->sdap_op == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_id_op_create failed\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_id_op_create failed\n");
         ret = ENOMEM;
         goto done;
     }
@@ -471,21 +471,21 @@ struct tevent_req *ipa_get_ad_memberships_send(TALLOC_CTX *mem_ctx,
         server_mode->ext_groups = talloc_zero(server_mode,
                                               struct ipa_ext_groups);
         if (server_mode->ext_groups == NULL) {
-            DEBUG(SSSDBG_OP_FAILURE, "talloc_zero failed.\n");
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "talloc_zero failed.\n");
             ret = ENOMEM;
             goto done;
         }
     }
 
     if (server_mode->ext_groups->next_update > time(NULL)) {
-        DEBUG(SSSDBG_TRACE_FUNC, "External group information still valid.\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "External group information still valid.\n");
         ret = ipa_add_ext_groups_step(req);
         if (ret == EOK) {
             goto done;
         } else if (ret == EAGAIN) {
             return req;
         } else {
-            DEBUG(SSSDBG_OP_FAILURE, "ipa_add_ext_groups_step failed.\n");
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "ipa_add_ext_groups_step failed.\n");
             goto done;
         }
 
@@ -493,7 +493,7 @@ struct tevent_req *ipa_get_ad_memberships_send(TALLOC_CTX *mem_ctx,
 
     subreq = sdap_id_op_connect_send(state->sdap_op, state, &ret);
     if (subreq == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_id_op_connect_send failed: %d(%s).\n",
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_id_op_connect_send failed: %d(%s).\n",
                                   ret, strerror(ret));
         goto done;
     }
@@ -527,10 +527,10 @@ static void ipa_get_ad_memberships_connect_done(struct tevent_req *subreq)
     talloc_zfree(subreq);
     if (ret != EOK) {
         if (state->dp_error == DP_ERR_OFFLINE) {
-            DEBUG(SSSDBG_MINOR_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
                   "No IPA server is available, going offline\n");
         } else {
-            DEBUG(SSSDBG_OP_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
                   "Failed to connect to IPA server: [%d](%s)\n",
                    ret, strerror(ret));
         }
@@ -547,7 +547,7 @@ static void ipa_get_ad_memberships_connect_done(struct tevent_req *subreq)
                             IPA_EXT_GROUPS_FILTER,
                             NULL, NULL);
     if (subreq == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_get_generic_send failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_get_generic_send failed.\n");
         ret = ENOMEM;
         goto fail;
     }
@@ -575,12 +575,12 @@ static void ipa_get_ext_groups_done(struct tevent_req *subreq)
                                  &state->reply);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "ipa_get_ext_groups request failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "ipa_get_ext_groups request failed.\n");
         tevent_req_error(req, ret);
         return;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "[%zu] external groups found.\n",
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "[%zu] external groups found.\n",
                               state->reply_count);
 
     ret = process_ext_groups(state,
@@ -588,7 +588,7 @@ static void ipa_get_ext_groups_done(struct tevent_req *subreq)
                              state->reply,
                              &ext_group_hash);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "process_ext_groups failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "process_ext_groups failed.\n");
         goto fail;
     }
 
@@ -606,7 +606,7 @@ static void ipa_get_ext_groups_done(struct tevent_req *subreq)
     } else if (ret == EAGAIN) {
         return;
     } else {
-        DEBUG(SSSDBG_OP_FAILURE, "ipa_add_ext_groups_step failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "ipa_add_ext_groups_step failed.\n");
         goto fail;
     }
 
@@ -628,12 +628,12 @@ static errno_t ipa_add_ext_groups_step(struct tevent_req *req)
                                    state->server_mode->ext_groups->ext_groups,
                                    &user_dn, &groups);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "find_ipa_ext_memberships failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "find_ipa_ext_memberships failed.\n");
         goto fail;
     }
 
     if (groups == NULL) {
-        DEBUG(SSSDBG_TRACE_ALL, "No external groups memberships found.\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req, "No external groups memberships found.\n");
         state->dp_error = DP_ERR_OK;
         return EOK;
     }
@@ -642,7 +642,7 @@ static errno_t ipa_add_ext_groups_step(struct tevent_req *req)
                                          user_dn, state->user_dom, groups,
                                          state->sdap_id_ctx->be->domain);
     if (subreq == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "ipa_add_ad_memberships_send failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "ipa_add_ad_memberships_send failed.\n");
         ret = ENOMEM;
         goto fail;
     }
@@ -666,7 +666,7 @@ static void ipa_add_ad_memberships_done(struct tevent_req *subreq)
     ret = ipa_add_ad_memberships_recv(subreq, &state->dp_error);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "ipa_add_ad_memberships request failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "ipa_add_ad_memberships request failed.\n");
         tevent_req_error(req, ret);
         return;
     }
@@ -743,12 +743,12 @@ static struct tevent_req *ipa_add_ad_memberships_send(TALLOC_CTX *mem_ctx,
     ret = add_ad_user_to_cached_groups(user_dn, user_dom, group_dom, groups,
                                        &missing_groups);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "add_ad_user_to_cached_groups failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "add_ad_user_to_cached_groups failed.\n");
         goto done;
     }
 
     if (!missing_groups) {
-        DEBUG(SSSDBG_TRACE_ALL, "All groups found in cache.\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req, "All groups found in cache.\n");
         ret = EOK;
         goto done;
     }
@@ -756,14 +756,14 @@ static struct tevent_req *ipa_add_ad_memberships_send(TALLOC_CTX *mem_ctx,
     state->sdap_op = sdap_id_op_create(state,
                                        state->sdap_id_ctx->conn->conn_cache);
     if (state->sdap_op == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_id_op_create failed\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_id_op_create failed\n");
         ret = ENOMEM;
         goto done;
     }
 
     subreq = sdap_id_op_connect_send(state->sdap_op, state, &ret);
     if (subreq == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_id_op_connect_send failed: %d(%s).\n",
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_id_op_connect_send failed: %d(%s).\n",
                                   ret, strerror(ret));
         goto done;
     }
@@ -797,10 +797,10 @@ static void ipa_add_ad_memberships_connect_done(struct tevent_req *subreq)
     talloc_zfree(subreq);
     if (ret != EOK) {
         if (state->dp_error == DP_ERR_OFFLINE) {
-            DEBUG(SSSDBG_MINOR_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
                   "No IPA server is available, going offline\n");
         } else {
-            DEBUG(SSSDBG_OP_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
                   "Failed to connect to IPA server: [%d](%s)\n",
                    ret, strerror(ret));
         }
@@ -835,13 +835,13 @@ static void ipa_add_ad_memberships_get_next(struct tevent_req *req)
                                            state->group_dom, state->groups,
                                            &missing_groups);
         if (ret != EOK) {
-            DEBUG(SSSDBG_OP_FAILURE, "add_ad_user_to_cached_groups failed.\n");
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "add_ad_user_to_cached_groups failed.\n");
             goto fail;
         }
 
         if (missing_groups) {
             /* this might be HBAC or sudo rule */
-            DEBUG(SSSDBG_FUNC_DATA, "There are unresolved external group "
+            BE_REQ_DEBUG(SSSDBG_FUNC_DATA, req, "There are unresolved external group "
                                        "memberships even after all groups "
                                        "have been looked up on the LDAP "
                                        "server.\n");
@@ -853,14 +853,14 @@ static void ipa_add_ad_memberships_get_next(struct tevent_req *req)
     group_dn = ldb_dn_new(state, sysdb_ctx_get_ldb(state->group_dom->sysdb),
                           state->groups[state->iter]);
     if (group_dn == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "ldb_dn_new failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "ldb_dn_new failed.\n");
         ret = ENOMEM;
         goto fail;
     }
 
     val = ldb_dn_get_rdn_val(group_dn);
     if (val == NULL || val->data == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Invalid group DN [%s].\n", state->groups[state->iter]);
         ret = EINVAL;
         goto fail;
@@ -885,7 +885,7 @@ static void ipa_add_ad_memberships_get_next(struct tevent_req *req)
                                  BE_FILTER_NAME,
                                  false, false);
     if (subreq == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "groups_get_send failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "groups_get_send failed.\n");
         ret = ENOMEM;
         goto fail;
     }
@@ -908,7 +908,7 @@ static void ipa_add_ad_memberships_get_group_done(struct tevent_req *subreq)
     ret = groups_get_recv(subreq, &state->dp_error, NULL);
     talloc_zfree(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "Failed to read group [%s] from LDAP [%d](%s)\n",
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Failed to read group [%s] from LDAP [%d](%s)\n",
               state->groups[state->iter], ret, strerror(ret));
 
         tevent_req_error(req, ret);
@@ -1085,7 +1085,7 @@ struct tevent_req *ipa_ext_group_member_send(TALLOC_CTX *mem_ctx,
 
     ipa_ctx = talloc_get_type(pvt, struct ipa_id_ctx);
     if (ipa_ctx == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Wrong private context!\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Wrong private context!\n");
         ret = EINVAL;
         goto immediate;
     }
@@ -1093,7 +1093,7 @@ struct tevent_req *ipa_ext_group_member_send(TALLOC_CTX *mem_ctx,
     state->dom = find_domain_by_sid(ipa_ctx->sdap_id_ctx->be->domain,
                                     ext_member);
     if (state->dom == NULL) {
-        DEBUG(SSSDBG_MINOR_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
               "Cannot find domain of SID [%s]\n", ext_member);
         ret = ENOENT;
         goto immediate;
@@ -1102,14 +1102,14 @@ struct tevent_req *ipa_ext_group_member_send(TALLOC_CTX *mem_ctx,
     ret = ipa_ext_group_member_check(state, state->dom, ext_member,
                                      &state->member_type, &state->member);
     if (ret == EOK) {
-        DEBUG(SSSDBG_TRACE_INTERNAL,
+        BE_REQ_DEBUG(SSSDBG_TRACE_INTERNAL, req,
               "external member %s already cached\n", ext_member);
         goto immediate;
     }
 
     ret = get_dp_id_data_for_sid(state, ext_member, state->dom->name, &ar);
     if (ret != EOK) {
-        DEBUG(SSSDBG_MINOR_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
               "Cannot create the account request for [%s]\n", ext_member);
         goto immediate;
     }
@@ -1150,11 +1150,11 @@ static void ipa_ext_group_member_done(struct tevent_req *subreq)
     ret = dp_req_recv_ptr(state, subreq, struct dp_reply_std, &reply);
     talloc_free(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "dp_req_recv failed\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "dp_req_recv failed\n");
         tevent_req_error(req, ret);
         return;
     } else if (reply->dp_error != DP_ERR_OK) {
-        DEBUG(SSSDBG_MINOR_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
               "Cannot refresh data from DP: %u,%u: %s\n",
               reply->dp_error, reply->error, reply->message);
         tevent_req_error(req, EIO);
@@ -1167,7 +1167,7 @@ static void ipa_ext_group_member_done(struct tevent_req *subreq)
                                           &state->member_type,
                                           &msg);
     if (ret != EOK) {
-        DEBUG(ret == ENOENT ? SSSDBG_TRACE_FUNC : SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(ret == ENOENT ? SSSDBG_TRACE_FUNC : SSSDBG_OP_FAILURE, req,
               "Could not find %s in sysdb [%d]: %s\n",
               state->ext_member, ret, sss_strerror(ret));
         tevent_req_error(req, ret);
@@ -1176,7 +1176,7 @@ static void ipa_ext_group_member_done(struct tevent_req *subreq)
 
     ret = sysdb_msg2attrs(state, 1, &msg, &members);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Could not convert result to sysdb_attrs [%d]: %s\n",
                ret, sss_strerror(ret));
         tevent_req_error(req, ret);

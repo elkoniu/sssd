@@ -580,7 +580,7 @@ static struct tevent_req *selinux_child_send(TALLOC_CTX *mem_ctx,
 
     req = tevent_req_create(mem_ctx, &state, struct selinux_child_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -589,7 +589,7 @@ static struct tevent_req *selinux_child_send(TALLOC_CTX *mem_ctx,
     state->io = talloc(state, struct child_io_fds);
     state->buf = talloc(state, struct io_buffer);
     if (state->io == NULL || state->buf == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "talloc failed.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "talloc failed.\n");
         ret = ENOMEM;
         goto immediately;
     }
@@ -600,14 +600,14 @@ static struct tevent_req *selinux_child_send(TALLOC_CTX *mem_ctx,
 
     ret = selinux_child_create_buffer(state);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "Failed to create the send buffer\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Failed to create the send buffer\n");
         ret = ENOMEM;
         goto immediately;
     }
 
     ret = selinux_fork_child(state);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "Failed to fork the child\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Failed to fork the child\n");
         goto immediately;
     }
 
@@ -777,13 +777,13 @@ static void selinux_child_done(struct tevent_req *subreq)
 
     ret = selinux_child_parse_response(buf, len, &child_result);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "selinux_child_parse_response failed: [%d][%s]\n",
               ret, strerror(ret));
         tevent_req_error(req, ret);
         return;
     } else if (child_result != 0){
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "Error in selinux_child: [%d][%s]\n",
               child_result, strerror(child_result));
         tevent_req_error(req, ERR_SELINUX_CONTEXT);
@@ -864,7 +864,7 @@ ipa_get_selinux_send(TALLOC_CTX *mem_ctx,
     state->host = host;
 
     offline = be_is_offline(be_ctx);
-    DEBUG(SSSDBG_TRACE_INTERNAL, "Connection status is [%s].\n",
+    BE_REQ_DEBUG(SSSDBG_TRACE_INTERNAL, req, "Connection status is [%s].\n",
                                   offline ? "offline" : "online");
 
     if (!offline) {
@@ -873,7 +873,7 @@ ipa_get_selinux_send(TALLOC_CTX *mem_ctx,
         now = time(NULL);
         if (now < selinux_ctx->last_update + refresh_interval) {
             /* SELinux maps were recently updated -> force offline */
-            DEBUG(SSSDBG_TRACE_INTERNAL,
+            BE_REQ_DEBUG(SSSDBG_TRACE_INTERNAL, req,
                   "Performing cached SELinux processing\n");
             offline = true;
         }
@@ -883,14 +883,14 @@ ipa_get_selinux_send(TALLOC_CTX *mem_ctx,
         state->op = sdap_id_op_create(state,
                         selinux_ctx->id_ctx->sdap_id_ctx->conn->conn_cache);
         if (!state->op) {
-            DEBUG(SSSDBG_OP_FAILURE, "sdap_id_op_create failed\n");
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_id_op_create failed\n");
             ret = ENOMEM;
             goto immediate;
         }
 
         subreq = sdap_id_op_connect_send(state->op, state, &ret);
         if (!subreq) {
-            DEBUG(SSSDBG_CRIT_FAILURE, "sdap_id_op_connect_send failed: "
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "sdap_id_op_connect_send failed: "
                                         "%d(%s).\n", ret, strerror(ret));
             talloc_zfree(state->op);
             goto immediate;
@@ -956,7 +956,7 @@ static void ipa_get_selinux_connect_done(struct tevent_req *subreq)
     hostname = dp_opt_get_string(state->selinux_ctx->id_ctx->ipa_options->basic,
                                         IPA_HOSTNAME);
     if (hostname == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Cannot determine the host name\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Cannot determine the host name\n");
         goto fail;
     }
 
@@ -1005,7 +1005,7 @@ ipa_get_selinux_maps_offline(struct tevent_req *req)
     ret = sysdb_search_selinux_config(state, state->be_ctx->domain,
                                       NULL, &defaults);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "sysdb_search_selinux_config failed [%d]: %s\n",
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sysdb_search_selinux_config failed [%d]: %s\n",
                                   ret, strerror(ret));
         return ret;
     }
@@ -1040,7 +1040,7 @@ ipa_get_selinux_maps_offline(struct tevent_req *req)
     ret = sysdb_get_selinux_usermaps(state, state->be_ctx->domain,
                                      attrs, &nmaps, &maps);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "sysdb_get_selinux_usermaps failed [%d]: %s\n",
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sysdb_get_selinux_usermaps failed [%d]: %s\n",
                                   ret, strerror(ret));
         return ret;
     }
@@ -1054,7 +1054,7 @@ ipa_get_selinux_maps_offline(struct tevent_req *req)
     /* read all the HBAC rules */
     attrs_get_cached_rules = hbac_get_attrs_to_get_cached_rules(state);
     if (attrs_get_cached_rules == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "hbac_get_attrs_to_get_cached_rules() failed\n");
         return ENOMEM;
     }
@@ -1065,7 +1065,7 @@ ipa_get_selinux_maps_offline(struct tevent_req *req)
                                       &state->hbac_rule_count,
                                       &state->hbac_rules);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "ipa_common_get_cached_rules failed [%d]: %s\n",
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "ipa_common_get_cached_rules failed [%d]: %s\n",
                                   ret, strerror(ret));
         return ret;
     }
@@ -1132,7 +1132,7 @@ static void ipa_get_selinux_config_done(struct tevent_req *subreq)
     ret = ipa_get_config_recv(subreq, state, &state->defaults);
     talloc_free(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "Could not get IPA config\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Could not get IPA config\n");
         goto done;
     }
 
@@ -1187,7 +1187,7 @@ static void ipa_get_selinux_maps_done(struct tevent_req *subreq)
         goto done;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC,
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
          "Found %zu SELinux user maps\n", state->nmaps);
 
     check_hbac = false;
@@ -1219,7 +1219,7 @@ static void ipa_get_selinux_maps_done(struct tevent_req *subreq)
             goto done;
         }
 
-        DEBUG(SSSDBG_TRACE_FUNC, "SELinux maps referenced an HBAC rule. "
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "SELinux maps referenced an HBAC rule. "
               "Need to refresh HBAC rules\n");
         subreq = ipa_hbac_rule_info_send(state, state->be_ctx->ev,
                                          sdap_id_op_handle(state->op),
@@ -1254,7 +1254,7 @@ static void ipa_get_selinux_hbac_done(struct tevent_req *subreq)
 
     ret = ipa_hbac_rule_info_recv(subreq, state, &state->hbac_rule_count,
                                   &state->hbac_rules);
-    DEBUG(SSSDBG_TRACE_INTERNAL,
+    BE_REQ_DEBUG(SSSDBG_TRACE_INTERNAL, req,
           "Received %zu HBAC rules\n", state->hbac_rule_count);
     talloc_free(subreq);
 
@@ -1533,7 +1533,7 @@ ipa_selinux_handler_send(TALLOC_CTX *mem_ctx,
     req = tevent_req_create(mem_ctx, &state,
                             struct ipa_selinux_handler_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -1549,7 +1549,7 @@ ipa_selinux_handler_send(TALLOC_CTX *mem_ctx,
     hostname = dp_opt_get_string(selinux_ctx->id_ctx->ipa_options->basic,
                                  IPA_HOSTNAME);
     if (hostname == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "Cannot determine this machine's host name\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Cannot determine this machine's host name\n");
         goto immediately;
     }
 
@@ -1606,7 +1606,7 @@ static void ipa_selinux_handler_get_done(struct tevent_req *subreq)
     ret = ipa_selinux_store_config(state->ipa_domain->sysdb, state->ipa_domain,
                                    default_user, map_order, map_count, maps);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Unable to store SELinux config [%d]: %s\n",
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Unable to store SELinux config [%d]: %s\n",
               ret, sss_strerror(ret));
         goto done;
     }
@@ -1617,7 +1617,7 @@ static void ipa_selinux_handler_get_done(struct tevent_req *subreq)
                                          state->user_domain, default_user,
                                          &sci);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Unable to create child input [%d]: %s\n",
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Unable to create child input [%d]: %s\n",
               ret, sss_strerror(ret));
         goto done;
     }
