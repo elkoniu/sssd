@@ -92,7 +92,7 @@ ipa_fetch_deskprofile_send(TALLOC_CTX *mem_ctx,
     req = tevent_req_create(mem_ctx, &state,
                             struct ipa_fetch_deskprofile_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -115,7 +115,7 @@ ipa_fetch_deskprofile_send(TALLOC_CTX *mem_ctx,
     }
 
     if (state->search_bases == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "No Desktop Profile search base found.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "No Desktop Profile search base found.\n");
         ret = EINVAL;
         goto immediately;
     }
@@ -123,7 +123,7 @@ ipa_fetch_deskprofile_send(TALLOC_CTX *mem_ctx,
     state->sdap_op = sdap_id_op_create(state,
                                        state->sdap_ctx->conn->conn_cache);
     if (state->sdap_op == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_id_op_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_id_op_create() failed\n");
         ret = ENOMEM;
         goto immediately;
     }
@@ -140,7 +140,7 @@ ipa_fetch_deskprofile_send(TALLOC_CTX *mem_ctx,
         next_request = (session_ctx->last_request + request_interval - now);
         /* This value is in seconds ... */
         next_request /= 60;
-        DEBUG(SSSDBG_TRACE_FUNC,
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
               "No rules were found in the last request.\n"
               "Next request will happen in any login after %ld minutes\n",
               next_request);
@@ -151,14 +151,14 @@ ipa_fetch_deskprofile_send(TALLOC_CTX *mem_ctx,
     state->session_ctx->no_rules_found = false;
 
     offline = be_is_offline(be_ctx);
-    DEBUG(SSSDBG_TRACE_ALL, "Connection status is [%s].\n",
+    BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req, "Connection status is [%s].\n",
           offline ? "offline" : "online");
 
     refresh_interval = dp_opt_get_int(state->ipa_options,
                                       IPA_DESKPROFILE_REFRESH);
 
     if (offline || now < session_ctx->last_update + refresh_interval) {
-        DEBUG(SSSDBG_TRACE_FUNC,
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req,
               "Performing cached Desktop Profile evaluation\n");
         ret = EOK;
         goto immediately;
@@ -193,7 +193,7 @@ ipa_fetch_deskprofile_retry(struct tevent_req *req)
 
     subreq = sdap_id_op_connect_send(state->sdap_op, state, &ret);
     if (subreq == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "sdap_id_op_connect_send() failed: %d (%s)\n",
               ret, strerror(ret));
 
@@ -287,7 +287,7 @@ ipa_fetch_deskprofile_hostinfo_done(struct tevent_req *subreq)
                              state->hosts->entries,
                              &state->ipa_host);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Could not locate IPA host.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Could not locate IPA host.\n");
         goto done;
     }
 
@@ -327,7 +327,7 @@ ipa_fetch_deskprofile_config_done(struct tevent_req *subreq)
     ret = sysdb_store_custom(state->be_ctx->domain, IPA_DESKPROFILE_PRIORITY,
                              DESKPROFILE_CONFIG_SUBDIR, state->config);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Unable to save Desktop Profile policy\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Unable to save Desktop Profile policy\n");
         goto done;
     }
 
@@ -397,7 +397,7 @@ ipa_fetch_deskprofile_rules_done(struct tevent_req *subreq)
     ret = ipa_common_purge_rules(state->be_ctx->domain,
                                  DESKPROFILE_RULES_SUBDIR);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "Unable to remove Desktop Profile rules\n");
         goto done;
     }
@@ -411,7 +411,7 @@ ipa_fetch_deskprofile_rules_done(struct tevent_req *subreq)
                                 state->hosts, NULL, state->rules,
                                 &state->session_ctx->last_update);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Unable to save Desktop Profile rules\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Unable to save Desktop Profile rules\n");
         goto done;
     }
 
@@ -495,7 +495,7 @@ ipa_pam_session_handler_send(TALLOC_CTX *mem_ctx,
     req = tevent_req_create(mem_ctx, &state,
                             struct ipa_pam_session_handler_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -518,7 +518,7 @@ ipa_pam_session_handler_send(TALLOC_CTX *mem_ctx,
                                                         &state->uid,
                                                         &state->gid);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "ipa_deskprofile_get_user_info() failed [%d]: %s\n",
               ret, sss_strerror(ret));
         state->pd->pam_status = PAM_SESSION_ERR;
@@ -532,7 +532,7 @@ ipa_pam_session_handler_send(TALLOC_CTX *mem_ctx,
                                                 state->uid,
                                                 state->gid);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "ipa_deskprofile_rules_remove_user_dir() failed.\n");
         state->pd->pam_status = PAM_SESSION_ERR;
         goto done;
@@ -570,7 +570,7 @@ ipa_pam_session_handler_done(struct tevent_req *subreq)
     talloc_free(subreq);
 
     if (ret == ENOENT) {
-        DEBUG(SSSDBG_FUNC_DATA, "No Desktop Profile rules found\n");
+        BE_REQ_DEBUG(SSSDBG_FUNC_DATA, req, "No Desktop Profile rules found\n");
         if (!state->session_ctx->no_rules_found) {
             state->session_ctx->no_rules_found = true;
             state->session_ctx->last_request = time(NULL);
@@ -578,7 +578,7 @@ ipa_pam_session_handler_done(struct tevent_req *subreq)
         state->pd->pam_status = PAM_SUCCESS;
         goto done;
     } else if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req,
               "Unable to fetch Desktop Profile rules [%d]: %s\n",
               ret, sss_strerror(ret));
         state->pd->pam_status = PAM_SYSTEM_ERR;

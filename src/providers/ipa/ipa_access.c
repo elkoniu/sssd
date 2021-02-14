@@ -127,7 +127,7 @@ ipa_fetch_hbac_send(TALLOC_CTX *mem_ctx,
     req = tevent_req_create(mem_ctx, &state,
                             struct ipa_fetch_hbac_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -154,27 +154,27 @@ ipa_fetch_hbac_send(TALLOC_CTX *mem_ctx,
     }
 
     if (state->search_bases == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "No HBAC search base found.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "No HBAC search base found.\n");
         ret = EINVAL;
         goto immediately;
     }
 
     state->sdap_op = sdap_id_op_create(state, state->sdap_ctx->conn->conn_cache);
     if (state->sdap_op == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_id_op_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_id_op_create() failed\n");
         ret = ENOMEM;
         goto immediately;
     }
 
     offline = be_is_offline(be_ctx);
-    DEBUG(SSSDBG_TRACE_ALL, "Connection status is [%s].\n",
+    BE_REQ_DEBUG(SSSDBG_TRACE_ALL, req, "Connection status is [%s].\n",
           offline ? "offline" : "online");
 
     refresh_interval = dp_opt_get_int(state->ipa_options, IPA_HBAC_REFRESH);
     now = time(NULL);
 
     if (offline || now < access_ctx->last_update + refresh_interval) {
-        DEBUG(SSSDBG_TRACE_FUNC, "Performing cached HBAC evaluation\n");
+        BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Performing cached HBAC evaluation\n");
         ret = EOK;
         goto immediately;
     }
@@ -207,7 +207,7 @@ static errno_t ipa_fetch_hbac_retry(struct tevent_req *req)
 
     subreq = sdap_id_op_connect_send(state->sdap_op, state, &ret);
     if (subreq == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "sdap_id_op_connect_send() failed: "
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "sdap_id_op_connect_send() failed: "
                                    "%d(%s)\n", ret, strerror(ret));
         return ret;
     }
@@ -268,7 +268,7 @@ static errno_t ipa_fetch_hbac_hostinfo(struct tevent_req *req)
         hostname = NULL;
 
         /* THIS FEATURE IS DEPRECATED */
-        DEBUG(SSSDBG_MINOR_FAILURE, "WARNING: Using deprecated option "
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "WARNING: Using deprecated option "
                     "ipa_hbac_support_srchost.\n");
         sss_log(SSS_LOG_NOTICE, "WARNING: Using deprecated option "
                     "ipa_hbac_support_srchost.\n");
@@ -377,7 +377,7 @@ static void ipa_fetch_hbac_services_done(struct tevent_req *subreq)
                              state->hosts->entries,
                              &state->ipa_host);
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Could not locate IPA host.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Could not locate IPA host.\n");
         goto done;
     }
 
@@ -448,7 +448,7 @@ static void ipa_fetch_hbac_rules_done(struct tevent_req *subreq)
         ret = ipa_common_purge_rules(state->be_ctx->domain,
                                      HBAC_RULES_SUBDIR);
         if (ret != EOK) {
-            DEBUG(SSSDBG_CRIT_FAILURE, "Unable to remove HBAC rules\n");
+            BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Unable to remove HBAC rules\n");
             goto done;
         }
 
@@ -461,7 +461,7 @@ static void ipa_fetch_hbac_rules_done(struct tevent_req *subreq)
                                 &state->access_ctx->last_update);
 
     if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Unable to save HBAC rules\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Unable to save HBAC rules\n");
         goto done;
     }
 
@@ -584,7 +584,7 @@ ipa_pam_access_handler_send(TALLOC_CTX *mem_ctx,
     req = tevent_req_create(mem_ctx, &state,
                             struct ipa_pam_access_handler_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -636,7 +636,7 @@ static void ipa_pam_access_handler_sdap_done(struct tevent_req *subreq)
         state->pd->pam_status = PAM_ACCT_EXPIRED;
         goto done;
     default:
-        DEBUG(SSSDBG_CRIT_FAILURE, "Error retrieving access check result "
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Error retrieving access check result "
               "[%d]: %s.\n", ret, sss_strerror(ret));
         state->pd->pam_status = PAM_SYSTEM_ERR;
         break;
@@ -671,11 +671,11 @@ static void ipa_pam_access_handler_done(struct tevent_req *subreq)
     talloc_free(subreq);
 
     if (ret == ENOENT) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "No HBAC rules found, denying access\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "No HBAC rules found, denying access\n");
         state->pd->pam_status = PAM_PERM_DENIED;
         goto done;
     } else if (ret != EOK) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Unable to fetch HBAC rules [%d]: %s\n",
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Unable to fetch HBAC rules [%d]: %s\n",
               ret, sss_strerror(ret));
         state->pd->pam_status = PAM_SYSTEM_ERR;
         goto done;
@@ -733,7 +733,7 @@ ipa_refresh_access_rules_send(TALLOC_CTX *mem_ctx,
     req = tevent_req_create(mem_ctx, &state,
                             struct ipa_refresh_access_rules_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Unable to create tevent request!\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Unable to create tevent request!\n");
         return NULL;
     }
 

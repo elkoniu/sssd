@@ -50,7 +50,7 @@ ipa_deskprofile_get_config_send(TALLOC_CTX *mem_ctx,
     req = tevent_req_create(mem_ctx, &state,
                             struct ipa_deskprofile_config_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed.\n");
         return NULL;
     }
 
@@ -71,7 +71,7 @@ ipa_deskprofile_get_config_send(TALLOC_CTX *mem_ctx,
                                    false);
     if (subreq == NULL) {
         ret = ENOMEM;
-        DEBUG(SSSDBG_CRIT_FAILURE, "sdap_get_generic_send failed.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "sdap_get_generic_send failed.\n");
         goto done;
     }
 
@@ -103,7 +103,7 @@ ipa_deskprofile_get_config_done(struct tevent_req *subreq)
 
     ret = sdap_get_generic_recv(subreq, state, &reply_count, &reply);
     if (ret != EOK) {
-        DEBUG(SSSDBG_MINOR_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
               "Could not retrieve Desktop Profile config\n");
         goto done;
     }
@@ -115,12 +115,12 @@ ipa_deskprofile_get_config_done(struct tevent_req *subreq)
          * In order to not throw a unnecessary error and fail let's just
          * return ENOENT and print a debug message about it.
          */
-        DEBUG(SSSDBG_MINOR_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
               "Server doesn't support Desktop Profile.\n");
         ret = ENOENT;
         goto done;
     } else if (reply_count != 1) {
-        DEBUG(SSSDBG_OP_FAILURE,
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
               "Unexpected number of results, expected 1, got %zu.\n",
               reply_count);
         ret = EINVAL;

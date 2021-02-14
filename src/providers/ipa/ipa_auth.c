@@ -61,7 +61,7 @@ static struct tevent_req *get_password_migration_flag_send(TALLOC_CTX *memctx,
     req = tevent_req_create(memctx, &state,
                             struct get_password_migration_flag_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "tevent_req_create failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "tevent_req_create failed.\n");
         return NULL;
     }
 
@@ -74,13 +74,13 @@ static struct tevent_req *get_password_migration_flag_send(TALLOC_CTX *memctx,
     state->sdap_op = sdap_id_op_create(state,
                                        state->sdap_id_ctx->conn->conn_cache);
     if (state->sdap_op == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_id_op_create failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_id_op_create failed.\n");
         goto fail;
     }
 
     subreq = sdap_id_op_connect_send(state->sdap_op, state, &ret);
     if (!subreq) {
-        DEBUG(SSSDBG_OP_FAILURE, "sdap_id_op_connect_send failed: %d(%s).\n",
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sdap_id_op_connect_send failed: %d(%s).\n",
                                   ret, strerror(ret));
         goto fail;
     }
@@ -106,11 +106,11 @@ static void get_password_migration_flag_auth_done(struct tevent_req *subreq)
     talloc_zfree(subreq);
     if (ret) {
         if (dp_error == DP_ERR_OFFLINE) {
-            DEBUG(SSSDBG_MINOR_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req,
                   "No IPA server is available, cannot get the "
                    "migration flag while offline\n");
         } else {
-            DEBUG(SSSDBG_OP_FAILURE,
+            BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req,
                   "Failed to connect to IPA server: [%d](%s)\n",
                    ret, strerror(ret));
         }
@@ -194,7 +194,7 @@ ipa_pam_auth_handler_send(TALLOC_CTX *mem_ctx,
     req = tevent_req_create(mem_ctx, &state,
                             struct ipa_pam_auth_handler_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -206,7 +206,7 @@ ipa_pam_auth_handler_send(TALLOC_CTX *mem_ctx,
                                      state->pd->domain,
                                      true);
     if (state->dom == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "Unknown domain %s\n", state->pd->domain);
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Unknown domain %s\n", state->pd->domain);
         pd->pam_status = PAM_SYSTEM_ERR;
         goto immediately;
     }
@@ -247,7 +247,7 @@ static void ipa_pam_auth_handler_krb5_done(struct tevent_req *subreq)
     ret = krb5_auth_queue_recv(subreq, &state->pd->pam_status, &dp_err);
     talloc_free(subreq);
     if (ret != EOK && state->pd->pam_status != PAM_CRED_ERR) {
-        DEBUG(SSSDBG_OP_FAILURE, "KRB5 auth failed [%d]: %s\n",
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "KRB5 auth failed [%d]: %s\n",
               ret, sss_strerror(ret));
         goto done;
     }
@@ -298,7 +298,7 @@ static void ipa_pam_auth_handler_flag_done(struct tevent_req *subreq)
     ret = get_password_migration_flag_recv(subreq, &password_migration);
     talloc_free(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "Unable to get password migration flag "
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Unable to get password migration flag "
               "[%d]: %s\n", ret, sss_strerror(ret));
         state->pd->pam_status = PAM_SYSTEM_ERR;
         goto done;
@@ -352,24 +352,24 @@ static void ipa_pam_auth_handler_connect_done(struct tevent_req *subreq)
     ret = sdap_cli_connect_recv(subreq, state, NULL, &sh, NULL);
     talloc_free(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "Cannot connect to LDAP server to perform "
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "Cannot connect to LDAP server to perform "
               "migration [%d]: %s\n", ret, sss_strerror(ret));
         goto done;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "Assuming Kerberos password is missing, "
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "Assuming Kerberos password is missing, "
           "starting password migration.\n");
 
     ret = sysdb_search_user_by_name(state, state->be_ctx->domain,
                                     state->pd->user, attrs, &msg);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "sysdb_search_user_by_name failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "sysdb_search_user_by_name failed.\n");
         goto done;
     }
 
     dn = ldb_msg_find_attr_as_string(msg, SYSDB_ORIG_DN, NULL);
     if (dn == NULL) {
-        DEBUG(SSSDBG_MINOR_FAILURE, "Missing original DN for user [%s].\n",
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "Missing original DN for user [%s].\n",
               state->pd->user);
         goto done;
     }
@@ -410,17 +410,17 @@ static void ipa_pam_auth_handler_auth_done(struct tevent_req *subreq)
     case ERR_AUTH_FAILED:
     case ERR_PASSWORD_EXPIRED:
     /* TODO: do we need to handle expired passwords? */
-        DEBUG(SSSDBG_MINOR_FAILURE, "LDAP authentication failed, "
+        BE_REQ_DEBUG(SSSDBG_MINOR_FAILURE, req, "LDAP authentication failed, "
               "password migration not possible.\n");
         state->pd->pam_status = PAM_CRED_INSUFFICIENT;
         goto done;
     default:
-        DEBUG(SSSDBG_OP_FAILURE, "auth_send request failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "auth_send request failed.\n");
         state->pd->pam_status = PAM_SYSTEM_ERR;
         goto done;
     }
 
-    DEBUG(SSSDBG_TRACE_FUNC, "LDAP authentication succeeded, "
+    BE_REQ_DEBUG(SSSDBG_TRACE_FUNC, req, "LDAP authentication succeeded, "
           "trying Kerberos authentication again.\n");
 
     subreq = krb5_auth_queue_send(state, state->ev, state->be_ctx, state->pd,
@@ -450,7 +450,7 @@ static void ipa_pam_auth_handler_retry_done(struct tevent_req *subreq)
     ret = krb5_auth_queue_recv(subreq, &state->pd->pam_status, &dp_err);
     talloc_free(subreq);
     if (ret != EOK) {
-        DEBUG(SSSDBG_OP_FAILURE, "krb5_auth_recv request failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "krb5_auth_recv request failed.\n");
         state->pd->pam_status = PAM_SYSTEM_ERR;
     }
 
