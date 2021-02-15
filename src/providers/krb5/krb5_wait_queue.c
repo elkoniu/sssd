@@ -260,9 +260,9 @@ struct tevent_req *krb5_auth_queue_send(TALLOC_CTX *mem_ctx,
     struct tevent_req *subreq;
     struct krb5_auth_queue_state *state;
 
-    req = tevent_req_create(mem_ctx, &state, struct krb5_auth_queue_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct krb5_auth_queue_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create failed.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create failed.\n");
         return NULL;
     }
     state->krb5_ctx = krb5_ctx;

@@ -53,9 +53,9 @@ struct tevent_req *krb5_access_send(TALLOC_CTX *mem_ctx,
     struct ldb_result *res;
     struct sss_domain_info *dom;
 
-    req = tevent_req_create(mem_ctx, &state, struct krb5_access_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct krb5_access_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create failed.\n");
+        DEBUG(SSSDBG_CRIT_FAILURE, "be_tevent_req_create failed.\n");
         return NULL;
     }
 

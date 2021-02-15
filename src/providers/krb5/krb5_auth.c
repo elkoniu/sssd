@@ -464,9 +464,9 @@ struct tevent_req *krb5_auth_send(TALLOC_CTX *mem_ctx,
     int ret;
     bool otp;
 
-    req = tevent_req_create(mem_ctx, &state, struct krb5_auth_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct krb5_auth_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create failed.\n");
+        DEBUG(SSSDBG_CRIT_FAILURE, "be_tevent_req_create failed.\n");
         return NULL;
     }
 
@@ -1225,10 +1225,10 @@ krb5_pam_handler_send(TALLOC_CTX *mem_ctx,
     struct tevent_req *subreq;
     struct tevent_req *req;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct krb5_pam_handler_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
