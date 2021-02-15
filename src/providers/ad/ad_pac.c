@@ -553,10 +553,10 @@ struct tevent_req *ad_handle_pac_initgr_send(TALLOC_CTX *mem_ctx,
     char **group_sids;
     bool use_id_mapping;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct ad_handle_pac_initgr_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "tevent_req_create failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "be_tevent_req_create failed.\n");
         return NULL;
     }
     state->user_dom = sdom->dom;

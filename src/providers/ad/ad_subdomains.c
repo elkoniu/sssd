@@ -1027,10 +1027,10 @@ ad_get_slave_domain_send(TALLOC_CTX *mem_ctx,
     struct tevent_req *req;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct ad_get_slave_domain_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -1312,9 +1312,9 @@ ad_get_root_domain_send(TALLOC_CTX *mem_ctx,
                             AD_AT_SID, AD_AT_TRUST_TYPE,
                             AD_AT_TRUST_ATTRS, NULL };
 
-    req = tevent_req_create(mem_ctx, &state, struct ad_get_root_domain_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct ad_get_root_domain_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -1601,7 +1601,7 @@ ad_check_gc_usability_send(TALLOC_CTX *mem_ctx,
     errno_t ret;
     bool uses_id_mapping;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct ad_check_gc_usability_state);
     if (req == NULL) {
         return NULL;
@@ -1808,10 +1808,10 @@ ad_subdomains_refresh_send(TALLOC_CTX *mem_ctx,
     struct tevent_req *req;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct ad_subdomains_refresh_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -2138,10 +2138,10 @@ ad_subdomains_handler_send(TALLOC_CTX *mem_ctx,
     struct tevent_req *subreq;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct ad_subdomains_handler_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -2346,9 +2346,9 @@ ad_check_domain_send(TALLOC_CTX *mem_ctx,
     struct tevent_req *subreq;
     struct ad_check_domain_state *state;
 
-    req = tevent_req_create(mem_ctx, &state, struct ad_check_domain_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct ad_check_domain_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "tevent_req_create failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "be_tevent_req_create failed.\n");
         return NULL;
     }
 

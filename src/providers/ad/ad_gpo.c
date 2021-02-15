@@ -1809,9 +1809,9 @@ ad_gpo_access_send(TALLOC_CTX *mem_ctx,
     hash_value_t val;
     enum gpo_map_type gpo_map_type;
 
-    req = tevent_req_create(mem_ctx, &state, struct ad_gpo_access_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct ad_gpo_access_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -3137,9 +3137,9 @@ ad_gpo_process_som_send(TALLOC_CTX *mem_ctx,
     struct ad_gpo_process_som_state *state;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state, struct ad_gpo_process_som_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct ad_gpo_process_som_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -4015,9 +4015,9 @@ ad_gpo_process_gpo_send(TALLOC_CTX *mem_ctx,
     struct ad_gpo_process_gpo_state *state;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state, struct ad_gpo_process_gpo_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct ad_gpo_process_gpo_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -4612,9 +4612,9 @@ ad_gpo_process_cse_send(TALLOC_CTX *mem_ctx,
     struct io_buffer *buf = NULL;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state, struct ad_gpo_process_cse_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct ad_gpo_process_cse_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -4868,7 +4868,7 @@ ad_gpo_get_sd_referral_send(TALLOC_CTX *mem_ctx,
     struct tevent_req *subreq;
     LDAPURLDesc *lud = NULL;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct ad_gpo_get_sd_referral_state);
     if (!req) return NULL;
 

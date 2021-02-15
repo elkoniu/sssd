@@ -133,7 +133,7 @@ ad_dyndns_update_send(TALLOC_CTX *mem_ctx,
     ctx = talloc_get_type(pvt, struct ad_options);
     sdap_ctx = ctx->id_ctx->sdap_id_ctx;
 
-    req = tevent_req_create(ctx, &state, struct ad_dyndns_update_state);
+    req = be_tevent_req_create(ctx, &state, struct ad_dyndns_update_state);
     if (req == NULL) {
         return NULL;
     }

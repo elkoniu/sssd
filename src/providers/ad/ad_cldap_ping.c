@@ -63,10 +63,10 @@ static struct tevent_req *ad_cldap_ping_dc_send(TALLOC_CTX *mem_ctx,
     struct tevent_req *req;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct ad_cldap_ping_dc_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -255,10 +255,10 @@ ad_cldap_ping_parallel_send(TALLOC_CTX *mem_ctx,
     struct timeval tv = {0, 0};
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct ad_cldap_ping_parallel_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -446,9 +446,9 @@ ad_cldap_ping_domain_send(TALLOC_CTX *mem_ctx,
     const char **domains;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state, struct ad_cldap_ping_domain_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct ad_cldap_ping_domain_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -594,9 +594,9 @@ struct tevent_req *ad_cldap_ping_send(TALLOC_CTX *mem_ctx,
     const char *domain;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state, struct ad_cldap_ping_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct ad_cldap_ping_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 

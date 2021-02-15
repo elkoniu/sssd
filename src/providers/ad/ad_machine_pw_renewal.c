@@ -133,9 +133,9 @@ ad_machine_account_password_renewal_send(TALLOC_CTX *mem_ctx,
     const char **extra_args;
     const char *server_name;
 
-    req = tevent_req_create(mem_ctx, &state, struct renewal_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct renewal_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "tevent_req_create failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "be_tevent_req_create failed.\n");
         return NULL;
     }
 
