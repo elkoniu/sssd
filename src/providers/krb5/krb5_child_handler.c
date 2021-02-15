@@ -521,7 +521,7 @@ struct tevent_req *handle_child_send(TALLOC_CTX *mem_ctx,
     int ret;
     struct io_buffer *buf = NULL;
 
-    req = tevent_req_create(mem_ctx, &state, struct handle_child_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct handle_child_state);
     if (req == NULL) {
         return NULL;
     }
