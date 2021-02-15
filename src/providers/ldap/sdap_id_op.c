@@ -406,7 +406,7 @@ struct tevent_req *sdap_id_op_connect_send(struct sdap_id_op *op,
         goto done;
     }
 
-    req = tevent_req_create(memctx, &state, struct sdap_id_op_connect_state);
+    req = be_tevent_req_create(memctx, &state, struct sdap_id_op_connect_state);
     if (!req) {
         ret = ENOMEM;
         goto done;

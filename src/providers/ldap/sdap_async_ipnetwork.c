@@ -64,9 +64,9 @@ sdap_get_ipnetwork_send(TALLOC_CTX *mem_ctx,
     struct tevent_req *req;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state, struct sdap_get_ipnetwork_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct sdap_get_ipnetwork_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -517,7 +517,7 @@ enum_ipnetworks_send(TALLOC_CTX *memctx,
     struct tevent_req *subreq;
     struct enum_ipnetworks_state *state;
 
-    req = tevent_req_create(memctx, &state, struct enum_ipnetworks_state);
+    req = be_tevent_req_create(memctx, &state, struct enum_ipnetworks_state);
     if (!req) return NULL;
 
     state->ev = ev;

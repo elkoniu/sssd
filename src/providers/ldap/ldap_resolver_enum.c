@@ -231,9 +231,9 @@ ldap_resolver_enumeration_send(TALLOC_CTX *mem_ctx,
     struct tevent_req *subreq;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state, struct ldap_resolver_enum_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct ldap_resolver_enum_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 

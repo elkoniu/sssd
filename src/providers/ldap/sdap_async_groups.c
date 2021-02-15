@@ -1239,7 +1239,7 @@ sdap_process_group_send(TALLOC_CTX *memctx,
     char* filter;
     int ret;
 
-    req = tevent_req_create(memctx, &grp_state,
+    req = be_tevent_req_create(memctx, &grp_state,
                             struct sdap_process_group_state);
     if (!req) return NULL;
 
@@ -1790,7 +1790,7 @@ struct tevent_req *sdap_get_groups_send(TALLOC_CTX *memctx,
     struct sdap_get_groups_state *state;
     struct sdap_id_conn_ctx *ldap_conn = NULL;
 
-    req = tevent_req_create(memctx, &state, struct sdap_get_groups_state);
+    req = be_tevent_req_create(memctx, &state, struct sdap_get_groups_state);
     if (!req) return NULL;
 
     state->ev = ev;

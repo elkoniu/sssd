@@ -72,7 +72,7 @@ struct tevent_req *sdap_connect_send(TALLOC_CTX *memctx,
     int ret;
     int timeout;
 
-    req = tevent_req_create(memctx, &state, struct sdap_connect_state);
+    req = be_tevent_req_create(memctx, &state, struct sdap_connect_state);
     if (!req) return NULL;
 
     if (uri == NULL || sockaddr == NULL) {
@@ -474,10 +474,10 @@ struct tevent_req *sdap_connect_host_send(TALLOC_CTX *mem_ctx,
     struct tevent_req *subreq = NULL;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct sdap_connect_host_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        DEBUG(SSSDBG_CRIT_FAILURE, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -661,7 +661,7 @@ static struct tevent_req *simple_bind_send(TALLOC_CTX *memctx,
     LDAPControl **request_controls = NULL;
     LDAPControl *ctrls[2] = { NULL, NULL };
 
-    req = tevent_req_create(memctx, &state, struct simple_bind_state);
+    req = be_tevent_req_create(memctx, &state, struct simple_bind_state);
     if (!req) return NULL;
 
     state->reply = talloc(state, struct sdap_msg);
@@ -960,7 +960,7 @@ static struct tevent_req *sasl_bind_send(TALLOC_CTX *memctx,
     int optret;
     char *diag_msg = NULL;
 
-    req = tevent_req_create(memctx, &state, struct sasl_bind_state);
+    req = be_tevent_req_create(memctx, &state, struct sasl_bind_state);
     if (!req) return NULL;
 
     state->ev = ev;
@@ -1127,7 +1127,7 @@ struct tevent_req *sdap_kinit_send(TALLOC_CTX *memctx,
         return NULL;
     }
 
-    req = tevent_req_create(memctx, &state, struct sdap_kinit_state);
+    req = be_tevent_req_create(memctx, &state, struct sdap_kinit_state);
     if (!req) return NULL;
 
     state->keytab = keytab;
@@ -1325,7 +1325,7 @@ struct tevent_req *sdap_auth_send(TALLOC_CTX *memctx,
     struct tevent_req *req, *subreq;
     struct sdap_auth_state *state;
 
-    req = tevent_req_create(memctx, &state, struct sdap_auth_state);
+    req = be_tevent_req_create(memctx, &state, struct sdap_auth_state);
     if (!req) return NULL;
 
     if (sasl_mech) {
@@ -1508,7 +1508,7 @@ struct tevent_req *sdap_cli_connect_send(TALLOC_CTX *memctx,
     struct tevent_req *req;
     int ret;
 
-    req = tevent_req_create(memctx, &state, struct sdap_cli_connect_state);
+    req = be_tevent_req_create(memctx, &state, struct sdap_cli_connect_state);
     if (!req) return NULL;
 
     state->ev = ev;

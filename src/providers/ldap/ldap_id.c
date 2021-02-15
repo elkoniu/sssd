@@ -179,7 +179,7 @@ struct tevent_req *users_get_send(TALLOC_CTX *memctx,
     char *user_filter = NULL;
     char *ep_filter;
 
-    req = tevent_req_create(memctx, &state, struct users_get_state);
+    req = be_tevent_req_create(memctx, &state, struct users_get_state);
     if (!req) return NULL;
 
     state->ev = ev;
@@ -680,7 +680,7 @@ struct tevent_req *groups_get_send(TALLOC_CTX *memctx,
     const char *member_filter[2];
     char *oc_list;
 
-    req = tevent_req_create(memctx, &state, struct groups_get_state);
+    req = be_tevent_req_create(memctx, &state, struct groups_get_state);
     if (!req) return NULL;
 
     state->ev = ev;
@@ -1165,7 +1165,7 @@ static struct tevent_req *groups_by_user_send(TALLOC_CTX *memctx,
     struct groups_by_user_state *state;
     int ret;
 
-    req = tevent_req_create(memctx, &state, struct groups_by_user_state);
+    req = be_tevent_req_create(memctx, &state, struct groups_by_user_state);
     if (!req) return NULL;
 
     state->ev = ev;
@@ -1397,7 +1397,7 @@ sdap_handle_acct_req_send(TALLOC_CTX *mem_ctx,
     errno_t ret;
 
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct sdap_handle_acct_req_state);
     if (!req) {
         return NULL;
@@ -1682,9 +1682,9 @@ static struct tevent_req *get_user_and_group_send(TALLOC_CTX *memctx,
     struct get_user_and_group_state *state;
     int ret;
 
-    req = tevent_req_create(memctx, &state, struct get_user_and_group_state);
+    req = be_tevent_req_create(memctx, &state, struct get_user_and_group_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "tevent_req_create failed.\n");
+        DEBUG(SSSDBG_OP_FAILURE, "be_tevent_req_create failed.\n");
         return NULL;
     }
 
@@ -1847,10 +1847,10 @@ sdap_account_info_handler_send(TALLOC_CTX *mem_ctx,
     struct tevent_req *req;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct sdap_account_info_handler_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 

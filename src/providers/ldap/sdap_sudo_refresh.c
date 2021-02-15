@@ -49,9 +49,9 @@ struct tevent_req *sdap_sudo_full_refresh_send(TALLOC_CTX *mem_ctx,
     char *delete_filter = NULL;
     int ret;
 
-    req = tevent_req_create(mem_ctx, &state, struct sdap_sudo_full_refresh_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct sdap_sudo_full_refresh_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        DEBUG(SSSDBG_CRIT_FAILURE, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -171,9 +171,9 @@ struct tevent_req *sdap_sudo_smart_refresh_send(TALLOC_CTX *mem_ctx,
     const char *usn;
     int ret;
 
-    req = tevent_req_create(mem_ctx, &state, struct sdap_sudo_smart_refresh_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct sdap_sudo_smart_refresh_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -302,9 +302,9 @@ struct tevent_req *sdap_sudo_rules_refresh_send(TALLOC_CTX *mem_ctx,
         return NULL;
     }
 
-    req = tevent_req_create(mem_ctx, &state, struct sdap_sudo_rules_refresh_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct sdap_sudo_rules_refresh_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 

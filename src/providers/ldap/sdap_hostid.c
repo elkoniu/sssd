@@ -56,7 +56,7 @@ hosts_get_send(TALLOC_CTX *memctx,
     struct hosts_get_state *state;
     errno_t ret;
 
-    req = tevent_req_create(memctx, &state, struct hosts_get_state);
+    req = be_tevent_req_create(memctx, &state, struct hosts_get_state);
     if (!req) return NULL;
 
     state->ev = ev;
@@ -247,9 +247,9 @@ sdap_hostid_handler_send(TALLOC_CTX *mem_ctx,
     struct tevent_req *req;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state, struct sdap_hostid_handler_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct sdap_hostid_handler_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        DEBUG(SSSDBG_CRIT_FAILURE, "be_tevent_req_create() failed\n");
         return NULL;
     }
 

@@ -60,7 +60,7 @@ sdap_get_ad_match_rule_members_send(TALLOC_CTX *mem_ctx,
     const char *group_dn;
     char *sanitized_group_dn;
 
-    req = tevent_req_create(mem_ctx, &state, struct sdap_ad_match_rule_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct sdap_ad_match_rule_state);
     if (!req) return NULL;
 
     state->ev = ev;

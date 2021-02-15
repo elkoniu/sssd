@@ -293,7 +293,7 @@ struct tevent_req *sdap_get_tgt_send(TALLOC_CTX *mem_ctx,
     struct io_buffer *buf;
     int ret;
 
-    req = tevent_req_create(mem_ctx, &state, struct sdap_get_tgt_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct sdap_get_tgt_state);
     if (!req) {
         return NULL;
     }

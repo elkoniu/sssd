@@ -70,7 +70,7 @@ struct tevent_req *ldap_netgroup_get_send(TALLOC_CTX *memctx,
     char *clean_name;
     int ret;
 
-    req = tevent_req_create(memctx, &state, struct ldap_netgroup_get_state);
+    req = be_tevent_req_create(memctx, &state, struct ldap_netgroup_get_state);
     if (!req) return NULL;
 
     state->ev = ev;

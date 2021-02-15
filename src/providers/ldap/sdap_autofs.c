@@ -81,7 +81,7 @@ sdap_autofs_enumerate_send(TALLOC_CTX *mem_ctx,
     struct sdap_autofs_enumerate_state *state;
     int ret;
 
-    req = tevent_req_create(mem_ctx, &state, struct sdap_autofs_enumerate_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct sdap_autofs_enumerate_state);
     if (!req) return NULL;
 
     state->ev = ev;
@@ -239,10 +239,10 @@ sdap_autofs_enumerate_handler_send(TALLOC_CTX *mem_ctx,
     struct tevent_req *req;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct sdap_autofs_enumerate_handler_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -319,10 +319,10 @@ sdap_autofs_get_map_handler_send(TALLOC_CTX *mem_ctx,
     struct tevent_req *req;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct sdap_autofs_get_map_handler_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        DEBUG(SSSDBG_CRIT_FAILURE, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -398,10 +398,10 @@ sdap_autofs_get_entry_handler_send(TALLOC_CTX *mem_ctx,
     struct tevent_req *req;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct sdap_autofs_get_entry_handler_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        DEBUG(SSSDBG_CRIT_FAILURE, "be_tevent_req_create() failed\n");
         return NULL;
     }
 

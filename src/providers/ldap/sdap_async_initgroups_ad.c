@@ -55,10 +55,10 @@ sdap_get_ad_tokengroups_send(TALLOC_CTX *mem_ctx,
     const char *attrs[] = {AD_TOKENGROUPS_ATTR, NULL};
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct sdap_get_ad_tokengroups_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -279,10 +279,10 @@ sdap_ad_resolve_sids_send(TALLOC_CTX *mem_ctx,
     struct tevent_req *req = NULL;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct sdap_ad_resolve_sids_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -456,10 +456,10 @@ sdap_ad_tokengroups_initgr_mapping_send(TALLOC_CTX *mem_ctx,
     struct ad_id_ctx *subdom_id_ctx;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct sdap_ad_tokengroups_initgr_mapping_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -803,10 +803,10 @@ sdap_ad_tokengroups_initgr_posix_send(TALLOC_CTX *mem_ctx,
     struct ad_id_ctx *subdom_id_ctx;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct sdap_ad_tokengroups_initgr_posix_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -1193,10 +1193,10 @@ sdap_ad_get_domain_local_groups_send(TALLOC_CTX *mem_ctx,
     struct ad_id_ctx *ad_id_ctx;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct sdap_ad_get_domain_local_groups_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -1597,10 +1597,10 @@ sdap_ad_tokengroups_initgroups_send(TALLOC_CTX *mem_ctx,
     struct tevent_req *subreq = NULL;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct sdap_ad_tokengroups_initgroups_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 

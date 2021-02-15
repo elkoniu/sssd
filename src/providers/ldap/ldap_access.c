@@ -45,10 +45,10 @@ sdap_pam_access_handler_send(TALLOC_CTX *mem_ctx,
     struct tevent_req *subreq;
     struct tevent_req *req;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct sdap_pam_access_handler_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 

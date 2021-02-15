@@ -795,9 +795,9 @@ sdap_nested_group_send(TALLOC_CTX *mem_ctx,
 
     PROBE(SDAP_NESTED_GROUP_SEND);
 
-    req = tevent_req_create(mem_ctx, &state, struct sdap_nested_group_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct sdap_nested_group_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -1011,10 +1011,10 @@ sdap_nested_group_process_send(TALLOC_CTX *mem_ctx,
     errno_t ret;
     int split_threshold;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct sdap_nested_group_process_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -1252,10 +1252,10 @@ sdap_nested_group_recurse_send(TALLOC_CTX *mem_ctx,
     struct tevent_req *req = NULL;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct sdap_nested_group_recurse_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        DEBUG(SSSDBG_CRIT_FAILURE, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -1374,10 +1374,10 @@ sdap_nested_group_single_send(TALLOC_CTX *mem_ctx,
     struct tevent_req *req = NULL;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct sdap_nested_group_single_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -1734,10 +1734,10 @@ sdap_nested_group_lookup_user_send(TALLOC_CTX *mem_ctx,
     const char *filter = NULL;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct sdap_nested_group_lookup_user_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -1894,10 +1894,10 @@ sdap_nested_group_lookup_group_send(TALLOC_CTX *mem_ctx,
 
      PROBE(SDAP_NESTED_GROUP_LOOKUP_GROUP_SEND);
 
-     req = tevent_req_create(mem_ctx, &state,
+     req = be_tevent_req_create(mem_ctx, &state,
                              struct sdap_nested_group_lookup_group_state);
      if (req == NULL) {
-         BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+         BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
          return NULL;
      }
 
@@ -2041,10 +2041,10 @@ sdap_nested_group_lookup_unknown_send(TALLOC_CTX *mem_ctx,
     struct tevent_req *subreq = NULL;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct sdap_nested_group_lookup_unknown_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -2224,10 +2224,10 @@ sdap_nested_group_deref_send(TALLOC_CTX *mem_ctx,
     size_t num_attrs = 0;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct sdap_nested_group_deref_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create() failed\n");
+        DEBUG(SSSDBG_CRIT_FAILURE, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -2587,10 +2587,10 @@ sdap_nested_group_lookup_external_send(TALLOC_CTX *mem_ctx,
     struct tevent_req *req = NULL;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct sdap_nested_group_lookup_external_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 

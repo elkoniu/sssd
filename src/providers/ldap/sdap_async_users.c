@@ -787,7 +787,7 @@ struct tevent_req *sdap_search_user_send(TALLOC_CTX *memctx,
     struct tevent_req *req;
     struct sdap_search_user_state *state;
 
-    req = tevent_req_create(memctx, &state, struct sdap_search_user_state);
+    req = be_tevent_req_create(memctx, &state, struct sdap_search_user_state);
     if (req == NULL) return NULL;
 
     state->ev = ev;
@@ -1019,7 +1019,7 @@ struct tevent_req *sdap_get_users_send(TALLOC_CTX *memctx,
     struct tevent_req *subreq;
     struct sdap_get_users_state *state;
 
-    req = tevent_req_create(memctx, &state, struct sdap_get_users_state);
+    req = be_tevent_req_create(memctx, &state, struct sdap_get_users_state);
     if (!req) return NULL;
 
     state->sysdb = sysdb;
