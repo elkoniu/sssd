@@ -61,7 +61,7 @@ struct tevent_req *ipa_selinux_get_maps_send(TALLOC_CTX *mem_ctx,
     struct ipa_selinux_get_maps_state *state;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state, struct ipa_selinux_get_maps_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct ipa_selinux_get_maps_state);
     if (req == NULL) {
         return NULL;
     }

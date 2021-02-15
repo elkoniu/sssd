@@ -578,9 +578,9 @@ static struct tevent_req *selinux_child_send(TALLOC_CTX *mem_ctx,
     struct selinux_child_state *state;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state, struct selinux_child_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct selinux_child_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -853,7 +853,7 @@ ipa_get_selinux_send(TALLOC_CTX *mem_ctx,
     struct ipa_options *ipa_options = selinux_ctx->id_ctx->ipa_options;
 
     DEBUG(SSSDBG_TRACE_FUNC, "Retrieving SELinux user mapping\n");
-    req = tevent_req_create(mem_ctx, &state, struct ipa_get_selinux_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct ipa_get_selinux_state);
     if (req == NULL) {
         return NULL;
     }
@@ -1530,10 +1530,10 @@ ipa_selinux_handler_send(TALLOC_CTX *mem_ctx,
     const char *hostname;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct ipa_selinux_handler_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 

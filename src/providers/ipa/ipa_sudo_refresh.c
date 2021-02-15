@@ -47,10 +47,10 @@ ipa_sudo_full_refresh_send(TALLOC_CTX *mem_ctx,
     char *delete_filter;
     int ret;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct ipa_sudo_full_refresh_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -156,10 +156,10 @@ ipa_sudo_smart_refresh_send(TALLOC_CTX *mem_ctx,
     const char *usn;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct ipa_sudo_smart_refresh_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -275,9 +275,9 @@ ipa_sudo_rules_refresh_send(TALLOC_CTX *mem_ctx,
     errno_t ret;
     int i;
 
-    req = tevent_req_create(mem_ctx, &state, struct ipa_sudo_rules_refresh_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct ipa_sudo_rules_refresh_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 

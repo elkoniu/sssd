@@ -203,7 +203,7 @@ struct tevent_req *ipa_get_netgroups_send(TALLOC_CTX *memctx,
     struct ipa_get_netgroups_state *state;
     int ret;
 
-    req = tevent_req_create(memctx, &state, struct ipa_get_netgroups_state);
+    req = be_tevent_req_create(memctx, &state, struct ipa_get_netgroups_state);
     if (!req) return NULL;
 
     state->ev = ev;

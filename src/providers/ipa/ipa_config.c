@@ -49,7 +49,7 @@ ipa_get_config_send(TALLOC_CTX *mem_ctx,
     errno_t ret;
     char *ldap_basedn;
 
-    req = tevent_req_create(mem_ctx, &state, struct ipa_get_config_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct ipa_get_config_state);
     if (req == NULL) {
         return NULL;
     }

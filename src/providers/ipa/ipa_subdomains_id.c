@@ -82,9 +82,9 @@ struct tevent_req *ipa_subdomain_account_send(TALLOC_CTX *memctx,
     struct tevent_req *subreq;
     int ret;
 
-    req = tevent_req_create(memctx, &state, struct ipa_subdomain_account_state);
+    req = be_tevent_req_create(memctx, &state, struct ipa_subdomain_account_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "tevent_req_create failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "be_tevent_req_create failed.\n");
          return NULL;
     }
 
@@ -456,7 +456,7 @@ struct tevent_req *ipa_get_subdom_acct_send(TALLOC_CTX *memctx,
     struct tevent_req *subreq;
     int ret;
 
-    req = tevent_req_create(memctx, &state, struct ipa_get_subdom_acct);
+    req = be_tevent_req_create(memctx, &state, struct ipa_get_subdom_acct);
     if (!req) return NULL;
 
     state->ev = ev;
@@ -818,7 +818,7 @@ ipa_get_ad_acct_send(TALLOC_CTX *mem_ctx,
     struct sdap_id_ctx *sdap_id_ctx;
     struct ad_id_ctx *ad_id_ctx;
 
-    req = tevent_req_create(mem_ctx, &state, struct ipa_get_ad_acct_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct ipa_get_ad_acct_state);
     if (req == NULL) return NULL;
 
     state->dp_error = -1;
@@ -1692,7 +1692,7 @@ ipa_srv_ad_acct_send(TALLOC_CTX *mem_ctx,
     struct tevent_req *req;
     struct ipa_srv_ad_acct_state *state;
 
-    req = tevent_req_create(mem_ctx, &state, struct ipa_srv_ad_acct_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct ipa_srv_ad_acct_state);
     if (req == NULL) {
         return NULL;
     }

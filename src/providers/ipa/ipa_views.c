@@ -300,9 +300,9 @@ struct tevent_req *ipa_get_ad_override_send(TALLOC_CTX *mem_ctx,
     struct tevent_req *subreq;
     struct ipa_get_ad_override_state *state;
 
-    req = tevent_req_create(mem_ctx, &state, struct ipa_get_ad_override_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct ipa_get_ad_override_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "tevent_req_create failed.\n");
+        DEBUG(SSSDBG_OP_FAILURE, "be_tevent_req_create failed.\n");
         return NULL;
     }
 
