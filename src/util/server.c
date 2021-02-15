@@ -33,6 +33,7 @@
 #include <ldb.h>
 #include "util/util.h"
 #include "confdb/confdb.h"
+#include "providers/data_provider/dp_private.h"
 
 #ifdef HAVE_PRCTL
 #include <sys/prctl.h>
@@ -732,4 +733,88 @@ void server_loop(struct main_context *main_ctx)
     /* as everything hangs off this event context, freeing it
        should initiate a clean shutdown of all services */
     talloc_free(main_ctx->event_ctx);
+}
+
+void dump_talloc_tree(void *mem_ctx)
+{
+    int level = 0;
+    void *current = mem_ctx;
+
+    DEBUG(SSSDBG_TRACE_FUNC, "---------------------------------\n");
+    while (current) {
+        DEBUG(SSSDBG_TRACE_FUNC, "TALLOC [%d]:[%s]\n", level, talloc_get_name(current));
+
+        /* Find out next the candidate for lookup */
+        current = talloc_parent(current);
+        level++;
+    }
+    DEBUG(SSSDBG_TRACE_FUNC, "TALLOC [%d]:[%s]\n", level, "TREE ROOT");
+    DEBUG(SSSDBG_TRACE_FUNC, "---------------------------------\n");
+}
+
+const char *find_req_name(void *mem_ctx)
+{
+    const char *name = "???";
+    void *current = mem_ctx;
+
+    while (current) {
+        /* Check if we are on right data struct already */
+        if (0 == strcmp("struct dp_req", talloc_get_name(current))) {
+            name = ((struct dp_req *)current)->name;
+            break;
+        }
+
+        if (0 == strcmp("struct client_req_id", talloc_get_name(current))) {
+            name = ((struct client_req_id *)current)->id;
+            break;
+        }
+
+        /* Find out next the candidate for lookup */
+        current = talloc_parent(current);
+    }
+
+    return name;
+}
+
+static int destroy_log_context(struct tevent_req *req)
+{
+    if (0 == strcmp("struct client_req_id", talloc_parent_name(req))) {
+        talloc_free(talloc_parent(req));
+        DEBUG(SSSDBG_TRACE_FUNC, "FOUND and deleted debug context\n");
+        return 0;
+    }
+
+    DEBUG(SSSDBG_TRACE_FUNC, "NOT FOUND debug context\n");
+    return 1;
+}
+
+struct tevent_req *be_req_create(TALLOC_CTX *mem_ctx,
+				      void *pstate,
+				      size_t state_size,
+				      const char *type,
+				      const char *location)
+{
+    struct tevent_req *req = NULL;
+    /* Allocate debug ID holder on talloc stack */
+    struct client_req_id *client_req_id = talloc(mem_ctx, struct client_req_id);
+    if (client_req_id == NULL) {
+        DEBUG(SSSDBG_TRACE_FUNC, "talloc() failed: %s\n", location);
+        return NULL;
+    }
+
+    /* Find closest client debug ID in talloc stack */
+    client_req_id->id = find_req_name(mem_ctx);
+    DEBUG(SSSDBG_TRACE_FUNC, "tevent payload: %s in: %s\n",
+                              client_req_id->id, location);
+
+    req = _tevent_req_create(client_req_id, pstate, state_size, type, location);
+    talloc_set_destructor(req, destroy_log_context);
+
+    return req;
+}
+
+void *be_req_data(struct tevent_req *req)
+{
+    /* This is empty wrapper for now*/
+    return _tevent_req_data(req);
 }
