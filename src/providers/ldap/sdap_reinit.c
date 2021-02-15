@@ -58,7 +58,7 @@ struct tevent_req* sdap_reinit_cleanup_send(TALLOC_CTX *mem_ctx,
      * is deleted.
      */
 
-    req = tevent_req_create(mem_ctx, &state, struct sdap_reinit_cleanup_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct sdap_reinit_cleanup_state);
     if (req == NULL) {
         return NULL;
     }

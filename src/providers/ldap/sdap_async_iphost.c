@@ -64,7 +64,7 @@ sdap_get_iphost_send(TALLOC_CTX *mem_ctx,
     struct tevent_req *req;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state, struct sdap_get_iphost_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct sdap_get_iphost_state);
     if (req == NULL) {
         return NULL;
     }
@@ -531,7 +531,7 @@ enum_iphosts_send(TALLOC_CTX *memctx,
     struct tevent_req *subreq;
     struct enum_iphosts_state *state;
 
-    req = tevent_req_create(memctx, &state, struct enum_iphosts_state);
+    req = be_tevent_req_create(memctx, &state, struct enum_iphosts_state);
     if (!req) return NULL;
 
     state->ev = ev;

@@ -253,7 +253,7 @@ automntmaps_process_members_send(TALLOC_CTX *mem_ctx,
     struct tevent_req *req;
     struct automntmaps_process_members_state *state;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct automntmaps_process_members_state);
     if (!req) return NULL;
 
@@ -467,7 +467,7 @@ sdap_get_automntmap_send(TALLOC_CTX *memctx,
     struct tevent_req *req;
     struct sdap_get_automntmap_state *state;
 
-    req = tevent_req_create(memctx, &state, struct sdap_get_automntmap_state);
+    req = be_tevent_req_create(memctx, &state, struct sdap_get_automntmap_state);
     if (!req) return NULL;
 
     state->ev = ev;
@@ -670,7 +670,7 @@ sdap_autofs_setautomntent_send(TALLOC_CTX *memctx,
     char *clean_mapname;
     errno_t ret;
 
-    req = tevent_req_create(memctx, &state,
+    req = be_tevent_req_create(memctx, &state,
                             struct sdap_autofs_setautomntent_state);
     if (!req) return NULL;
 
@@ -986,7 +986,7 @@ struct tevent_req *sdap_autofs_get_map_send(TALLOC_CTX *mem_ctx,
     struct sdap_autofs_get_map_state *state;
     int ret;
 
-    req = tevent_req_create(mem_ctx, &state, struct sdap_autofs_get_map_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct sdap_autofs_get_map_state);
     if (!req) {
         return NULL;
     }
@@ -1195,7 +1195,7 @@ struct tevent_req *sdap_autofs_get_entry_send(TALLOC_CTX *mem_ctx,
     struct sdap_autofs_get_entry_state *state;
     int ret;
 
-    req = tevent_req_create(mem_ctx, &state, struct sdap_autofs_get_entry_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct sdap_autofs_get_entry_state);
     if (!req) {
         return NULL;
     }

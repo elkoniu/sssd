@@ -135,9 +135,9 @@ sdap_access_send(TALLOC_CTX *mem_ctx,
     struct ldb_result *res;
     const char *attrs[] = { "*", NULL };
 
-    req = tevent_req_create(mem_ctx, &state, struct sdap_access_req_ctx);
+    req = be_tevent_req_create(mem_ctx, &state, struct sdap_access_req_ctx);
     if (req == NULL) {
-        DEBUG(SSSDBG_CRIT_FAILURE, "tevent_req_create failed.\n");
+        DEBUG(SSSDBG_CRIT_FAILURE, "be_tevent_req_create failed.\n");
         return NULL;
     }
 
@@ -849,7 +849,7 @@ static struct tevent_req *sdap_access_filter_send(TALLOC_CTX *mem_ctx,
     errno_t ret = ERR_INTERNAL;
     char *name;
 
-    req = tevent_req_create(mem_ctx, &state, struct sdap_access_filter_req_ctx);
+    req = be_tevent_req_create(mem_ctx, &state, struct sdap_access_filter_req_ctx);
     if (req == NULL) {
         return NULL;
     }
@@ -1426,7 +1426,7 @@ sdap_access_ppolicy_send(TALLOC_CTX *mem_ctx,
     struct tevent_req *req;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx,
+    req = be_tevent_req_create(mem_ctx,
                             &state, struct sdap_access_ppolicy_req_ctx);
     if (req == NULL) {
         return NULL;

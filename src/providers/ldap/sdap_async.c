@@ -532,7 +532,7 @@ struct tevent_req *sdap_exop_modify_passwd_send(TALLOC_CTX *memctx,
     LDAPControl **request_controls = NULL;
     LDAPControl *ctrls[2] = { NULL, NULL };
 
-    req = tevent_req_create(memctx, &state,
+    req = be_tevent_req_create(memctx, &state,
                             struct sdap_exop_modify_passwd_state);
     if (!req) return NULL;
 
@@ -722,7 +722,7 @@ sdap_modify_send(TALLOC_CTX *mem_ctx,
     errno_t ret;
     int msgid;
 
-    req = tevent_req_create(mem_ctx, &state, struct sdap_modify_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct sdap_modify_state);
     if (req == NULL) {
         return NULL;
     }
@@ -868,7 +868,7 @@ sdap_modify_passwd_send(TALLOC_CTX *mem_ctx,
     char **values;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state, struct sdap_modify_passwd_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct sdap_modify_passwd_state);
     if (req == NULL) {
         return NULL;
     }
@@ -976,7 +976,7 @@ sdap_modify_shadow_lastchange_send(TALLOC_CTX *mem_ctx,
     char **values;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct sdap_modify_shadow_lastchange_state);
     if (req == NULL) {
         return NULL;
@@ -1082,7 +1082,7 @@ struct tevent_req *sdap_get_rootdse_send(TALLOC_CTX *memctx,
 
     DEBUG(SSSDBG_TRACE_ALL, "Getting rootdse\n");
 
-    req = tevent_req_create(memctx, &state, struct sdap_get_rootdse_state);
+    req = be_tevent_req_create(memctx, &state, struct sdap_get_rootdse_state);
     if (!req) return NULL;
 
     state->ev = ev;
@@ -1357,7 +1357,7 @@ sdap_get_generic_ext_send(TALLOC_CTX *memctx,
     int i;
     LDAPControl *control;
 
-    req = tevent_req_create(memctx, &state, struct sdap_get_generic_ext_state);
+    req = be_tevent_req_create(memctx, &state, struct sdap_get_generic_ext_state);
     if (!req) return NULL;
 
     state->ev = ev;
@@ -1480,6 +1480,8 @@ static errno_t sdap_get_generic_ext_step(struct tevent_req *req)
             }
         }
     }
+
+    dump_talloc_tree(req);
 
     disable_paging = dp_opt_get_bool(state->opts->basic, SDAP_DISABLE_PAGING);
 
@@ -1863,7 +1865,7 @@ struct tevent_req *sdap_get_and_parse_generic_send(TALLOC_CTX *memctx,
     struct sdap_get_and_parse_generic_state *state = NULL;
     unsigned int flags = 0;
 
-    req = tevent_req_create(memctx, &state,
+    req = be_tevent_req_create(memctx, &state,
                             struct sdap_get_and_parse_generic_state);
     if (!req) return NULL;
 
@@ -1977,7 +1979,7 @@ struct tevent_req *sdap_get_generic_send(TALLOC_CTX *memctx,
     struct tevent_req *subreq = NULL;
     struct sdap_get_generic_state *state = NULL;
 
-    req = tevent_req_create(memctx, &state, struct sdap_get_generic_state);
+    req = be_tevent_req_create(memctx, &state, struct sdap_get_generic_state);
     if (!req) return NULL;
 
     subreq = sdap_get_and_parse_generic_send(memctx, ev, opts, sh, search_base,
@@ -2062,7 +2064,7 @@ sdap_x_deref_search_send(TALLOC_CTX *memctx, struct tevent_context *ev,
     struct sdap_x_deref_search_state *state;
     int ret;
 
-    req = tevent_req_create(memctx, &state, struct sdap_x_deref_search_state);
+    req = be_tevent_req_create(memctx, &state, struct sdap_x_deref_search_state);
     if (!req) return NULL;
 
     state->sh = sh;
@@ -2294,7 +2296,7 @@ sdap_sd_search_send(TALLOC_CTX *memctx, struct tevent_context *ev,
     struct sdap_sd_search_state *state;
     int ret;
 
-    req = tevent_req_create(memctx, &state, struct sdap_sd_search_state);
+    req = be_tevent_req_create(memctx, &state, struct sdap_sd_search_state);
     if (!req) return NULL;
 
     state->ctrls = talloc_zero_array(state, LDAPControl *, 2);
@@ -2491,7 +2493,7 @@ sdap_asq_search_send(TALLOC_CTX *memctx, struct tevent_context *ev,
     struct sdap_asq_search_state *state;
     int ret;
 
-    req = tevent_req_create(memctx, &state, struct sdap_asq_search_state);
+    req = be_tevent_req_create(memctx, &state, struct sdap_asq_search_state);
     if (!req) return NULL;
 
     state->maps = maps;
@@ -2748,7 +2750,7 @@ sdap_deref_search_with_filter_send(TALLOC_CTX *memctx,
     struct tevent_req *subreq = NULL;
     struct sdap_deref_search_state *state;
 
-    req = tevent_req_create(memctx, &state, struct sdap_deref_search_state);
+    req = be_tevent_req_create(memctx, &state, struct sdap_deref_search_state);
     if (!req) return NULL;
 
     state->sh = sh;
@@ -2810,7 +2812,7 @@ sdap_deref_search_send(TALLOC_CTX *memctx,
     struct tevent_req *subreq = NULL;
     struct sdap_deref_search_state *state;
 
-    req = tevent_req_create(memctx, &state, struct sdap_deref_search_state);
+    req = be_tevent_req_create(memctx, &state, struct sdap_deref_search_state);
     if (!req) return NULL;
 
     state->sh = sh;

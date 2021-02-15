@@ -68,7 +68,7 @@ sdap_search_bases_ex_send(TALLOC_CTX *mem_ctx,
     struct sdap_search_bases_ex_state *state;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state, struct sdap_search_bases_ex_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct sdap_search_bases_ex_state);
     if (req == NULL) {
         return NULL;
     }
@@ -341,7 +341,7 @@ sdap_deref_bases_ex_send(TALLOC_CTX *mem_ctx,
     struct sdap_deref_bases_ex_state *state;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state, struct sdap_deref_bases_ex_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct sdap_deref_bases_ex_state);
     if (req == NULL) {
         return NULL;
     }

@@ -253,7 +253,7 @@ struct tevent_req *netgr_translate_members_send(TALLOC_CTX *memctx,
     bool all_resolved;
     const char *cn_attr[] = { SYSDB_NAME, SYSDB_ORIG_DN, NULL };
 
-    req = tevent_req_create(memctx, &state,
+    req = be_tevent_req_create(memctx, &state,
                             struct netgr_translate_members_state);
     if (req == NULL) {
         return NULL;
@@ -597,7 +597,7 @@ struct tevent_req *sdap_get_netgroups_send(TALLOC_CTX *memctx,
     struct tevent_req *req;
     struct sdap_get_netgroups_state *state;
 
-    req = tevent_req_create(memctx, &state, struct sdap_get_netgroups_state);
+    req = be_tevent_req_create(memctx, &state, struct sdap_get_netgroups_state);
     if (!req) return NULL;
 
     state->ev = ev;

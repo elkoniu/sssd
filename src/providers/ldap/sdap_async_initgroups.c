@@ -421,7 +421,7 @@ struct tevent_req *sdap_initgr_rfc2307_send(TALLOC_CTX *memctx,
     errno_t ret;
     char *oc_list;
 
-    req = tevent_req_create(memctx, &state, struct sdap_initgr_rfc2307_state);
+    req = be_tevent_req_create(memctx, &state, struct sdap_initgr_rfc2307_state);
     if (!req) return NULL;
 
     state->ev = ev;
@@ -814,7 +814,7 @@ static struct tevent_req *sdap_initgr_nested_send(TALLOC_CTX *memctx,
     errno_t ret;
     int deref_threshold;
 
-    req = tevent_req_create(memctx, &state, struct sdap_initgr_nested_state);
+    req = be_tevent_req_create(memctx, &state, struct sdap_initgr_nested_state);
     if (!req) return NULL;
 
     state->ev = ev;
@@ -1608,7 +1608,7 @@ static struct tevent_req *sdap_initgr_rfc2307bis_send(
     bool use_id_mapping;
     char *oc_list;
 
-    req = tevent_req_create(memctx, &state, struct sdap_initgr_rfc2307bis_state);
+    req = be_tevent_req_create(memctx, &state, struct sdap_initgr_rfc2307bis_state);
     if (!req) return NULL;
 
     state->ev = ev;
@@ -2265,7 +2265,7 @@ struct tevent_req *rfc2307bis_nested_groups_send(
           "About to process %zu groups in nesting level %zu\n",
            num_groups, nesting);
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct sdap_rfc2307bis_nested_ctx);
     if (!req) return NULL;
 
@@ -2735,7 +2735,7 @@ struct tevent_req *sdap_get_initgr_send(TALLOC_CTX *memctx,
 
     DEBUG(SSSDBG_TRACE_ALL, "Retrieving info for initgroups call\n");
 
-    req = tevent_req_create(memctx, &state, struct sdap_get_initgr_state);
+    req = be_tevent_req_create(memctx, &state, struct sdap_get_initgr_state);
     if (!req) return NULL;
 
     state->ev = ev;

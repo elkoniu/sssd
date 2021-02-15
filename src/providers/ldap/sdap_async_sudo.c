@@ -54,7 +54,7 @@ sdap_sudo_load_sudoers_send(TALLOC_CTX *mem_ctx,
     struct sdap_search_base **sb;
     int ret;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct sdap_sudo_load_sudoers_state);
     if (!req) {
         return NULL;
@@ -310,7 +310,7 @@ struct tevent_req *sdap_sudo_refresh_send(TALLOC_CTX *mem_ctx,
     struct sdap_id_ctx *id_ctx = sudo_ctx->id_ctx;
     int ret;
 
-    req = tevent_req_create(mem_ctx, &state, struct sdap_sudo_refresh_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct sdap_sudo_refresh_state);
     if (!req) {
         return NULL;
     }

@@ -103,7 +103,7 @@ sdap_dyndns_update_send(TALLOC_CTX *mem_ctx,
     struct sdap_dyndns_update_state *state;
     const char *conf_servername;
 
-    req = tevent_req_create(mem_ctx, &state, struct sdap_dyndns_update_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct sdap_dyndns_update_state);
     if (req == NULL) {
         return NULL;
     }
@@ -566,7 +566,7 @@ sdap_dyndns_get_addrs_send(TALLOC_CTX *mem_ctx,
     struct tevent_req *subreq;
     struct sdap_dyndns_get_addrs_state *state;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct sdap_dyndns_get_addrs_state);
     if (req == NULL) {
         return NULL;

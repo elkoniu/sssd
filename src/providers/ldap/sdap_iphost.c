@@ -63,7 +63,7 @@ sdap_iphost_get_send(TALLOC_CTX *mem_ctx,
     char *clean_filter_value;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state, struct sdap_ip_host_get_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct sdap_ip_host_get_state);
     if (req == NULL) {
         return NULL;
     }
@@ -301,10 +301,10 @@ sdap_iphost_handler_send(TALLOC_CTX *mem_ctx,
     struct tevent_req *subreq;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct sdap_ip_host_handler_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 

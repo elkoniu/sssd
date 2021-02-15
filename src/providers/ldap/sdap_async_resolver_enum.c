@@ -60,7 +60,7 @@ sdap_dom_resolver_enum_send(TALLOC_CTX *memctx,
     int t;
     errno_t ret;
 
-    req = tevent_req_create(memctx, &state, struct sdap_dom_resolver_enum_state);
+    req = be_tevent_req_create(memctx, &state, struct sdap_dom_resolver_enum_state);
     if (req == NULL) return NULL;
 
     state->ev = ev;

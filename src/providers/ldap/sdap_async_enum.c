@@ -89,7 +89,7 @@ sdap_dom_enum_ex_send(TALLOC_CTX *memctx,
     int t;
     errno_t ret;
 
-    req = tevent_req_create(memctx, &state, struct sdap_dom_enum_ex_state);
+    req = be_tevent_req_create(memctx, &state, struct sdap_dom_enum_ex_state);
     if (req == NULL) return NULL;
 
     state->ev = ev;
@@ -442,7 +442,7 @@ static struct tevent_req *enum_users_send(TALLOC_CTX *memctx,
     int ret;
     bool use_mapping;
 
-    req = tevent_req_create(memctx, &state, struct enum_users_state);
+    req = be_tevent_req_create(memctx, &state, struct enum_users_state);
     if (!req) return NULL;
 
     state->ev = ev;
@@ -619,7 +619,7 @@ static struct tevent_req *enum_groups_send(TALLOC_CTX *memctx,
     bool non_posix = false;
     char *oc_list;
 
-    req = tevent_req_create(memctx, &state, struct enum_groups_state);
+    req = be_tevent_req_create(memctx, &state, struct enum_groups_state);
     if (!req) return NULL;
 
     state->ev = ev;

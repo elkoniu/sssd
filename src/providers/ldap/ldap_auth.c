@@ -384,7 +384,7 @@ static struct tevent_req *get_user_dn_send(TALLOC_CTX *memctx,
     const char **attrs;
     errno_t ret;
 
-    req = tevent_req_create(memctx, &state, struct get_user_dn_state);
+    req = be_tevent_req_create(memctx, &state, struct get_user_dn_state);
     if (!req) return NULL;
 
     ret = sss_parse_internal_fqname(state, username,
@@ -639,7 +639,7 @@ static struct tevent_req *auth_send(TALLOC_CTX *memctx,
     struct auth_state *state;
     errno_t ret;
 
-    req = tevent_req_create(memctx, &state, struct auth_state);
+    req = be_tevent_req_create(memctx, &state, struct auth_state);
     if (!req) return NULL;
 
     /* The token must be a password token */
@@ -948,10 +948,10 @@ sdap_pam_auth_handler_send(TALLOC_CTX *mem_ctx,
     struct tevent_req *subreq;
     struct tevent_req *req;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct sdap_pam_auth_handler_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -1128,7 +1128,7 @@ sdap_pam_change_password_send(TALLOC_CTX *mem_ctx,
 
     pwd_attr = opts->user_map[SDAP_AT_USER_PWD].name;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct sdap_pam_change_password_state);
     if (req == NULL) {
         BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "Unable to create tevent request!\n");
@@ -1256,10 +1256,10 @@ sdap_pam_chpass_handler_send(TALLOC_CTX *mem_ctx,
     struct tevent_req *subreq;
     struct tevent_req *req;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct sdap_pam_chpass_handler_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 

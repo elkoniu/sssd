@@ -77,7 +77,7 @@ services_get_send(TALLOC_CTX *mem_ctx,
     char *clean_name;
     char *clean_protocol = NULL;
 
-    req = tevent_req_create(mem_ctx, &state, struct sdap_services_get_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct sdap_services_get_state);
     if (!req) return NULL;
 
     state->ev = ev;

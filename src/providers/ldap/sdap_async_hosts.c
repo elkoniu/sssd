@@ -69,7 +69,7 @@ sdap_host_info_send(TALLOC_CTX *mem_ctx,
     struct sdap_host_state *state;
     struct tevent_req *req;
 
-    req = tevent_req_create(mem_ctx, &state, struct sdap_host_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct sdap_host_state);
     if (req == NULL) {
         return NULL;
     }
