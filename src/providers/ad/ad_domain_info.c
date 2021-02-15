@@ -206,7 +206,7 @@ ad_domain_info_send(TALLOC_CTX *mem_ctx,
     struct tevent_req *req;
     struct ad_domain_info_state *state;
 
-    req = tevent_req_create(mem_ctx, &state, struct ad_domain_info_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct ad_domain_info_state);
     if (!req) return NULL;
 
     state->ev = ev;

@@ -132,7 +132,7 @@ ad_handle_acct_info_send(TALLOC_CTX *mem_ctx,
     errno_t ret;
     bool shortcut;
 
-    req = tevent_req_create(mem_ctx, &state, struct ad_handle_acct_info_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct ad_handle_acct_info_state);
     if (req == NULL) {
         return NULL;
     }
@@ -382,10 +382,10 @@ ad_account_info_send(TALLOC_CTX *mem_ctx,
     struct sdap_domain *sdom;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct ad_account_info_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -493,10 +493,10 @@ ad_account_info_handler_send(TALLOC_CTX *mem_ctx,
     errno_t ret;
 
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct ad_account_info_handler_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -590,7 +590,7 @@ ad_id_enumeration_send(TALLOC_CTX *mem_ctx,
     struct ldap_enum_ctx *ectx;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state, struct ad_enumeration_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct ad_enumeration_state);
     if (req == NULL) return NULL;
 
     ectx = talloc_get_type(pvt, struct ldap_enum_ctx);
@@ -1161,10 +1161,10 @@ ad_get_account_domain_send(TALLOC_CTX *mem_ctx,
     errno_t ret;
     bool use_id_mapping;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct ad_get_account_domain_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
     state->ev = params->ev;

@@ -240,7 +240,7 @@ ad_resolver_enumeration_send(TALLOC_CTX *mem_ctx,
     errno_t ret;
     struct sdap_id_ctx *sdap_id_ctx;
 
-    req = tevent_req_create(mem_ctx, &state, struct ad_resolver_enum_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct ad_resolver_enum_state);
     if (req == NULL) {
         return NULL;
     }
