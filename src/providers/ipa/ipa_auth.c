@@ -58,10 +58,10 @@ static struct tevent_req *get_password_migration_flag_send(TALLOC_CTX *memctx,
         return NULL;
     }
 
-    req = tevent_req_create(memctx, &state,
+    req = be_tevent_req_create(memctx, &state,
                             struct get_password_migration_flag_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "tevent_req_create failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "be_tevent_req_create failed.\n");
         return NULL;
     }
 
@@ -191,10 +191,10 @@ ipa_pam_auth_handler_send(TALLOC_CTX *mem_ctx,
     struct tevent_req *subreq;
     struct tevent_req *req;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct ipa_pam_auth_handler_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 

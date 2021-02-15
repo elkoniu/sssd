@@ -430,9 +430,9 @@ struct tevent_req *ipa_get_ad_memberships_send(TALLOC_CTX *mem_ctx,
     struct tevent_req *subreq;
     struct get_ad_membership_state *state;
 
-    req = tevent_req_create(mem_ctx, &state, struct get_ad_membership_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct get_ad_membership_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "tevent_req_create failed.\n");
+        DEBUG(SSSDBG_OP_FAILURE, "be_tevent_req_create failed.\n");
         return NULL;
     }
 
@@ -720,9 +720,9 @@ static struct tevent_req *ipa_add_ad_memberships_send(TALLOC_CTX *mem_ctx,
     struct add_ad_membership_state *state;
     bool missing_groups = false;
 
-    req = tevent_req_create(mem_ctx, &state, struct add_ad_membership_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct add_ad_membership_state);
     if (req == NULL) {
-        DEBUG(SSSDBG_OP_FAILURE, "tevent_req_create failed.\n");
+        DEBUG(SSSDBG_OP_FAILURE, "be_tevent_req_create failed.\n");
         return NULL;
     }
 
@@ -1077,7 +1077,7 @@ struct tevent_req *ipa_ext_group_member_send(TALLOC_CTX *mem_ctx,
     struct dp_id_data *ar;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state, struct ipa_ext_member_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct ipa_ext_member_state);
     if (req == NULL) {
         return NULL;
     }

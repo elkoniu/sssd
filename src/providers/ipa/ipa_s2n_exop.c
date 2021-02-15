@@ -142,7 +142,7 @@ static struct tevent_req *ipa_s2n_exop_send(TALLOC_CTX *mem_ctx,
     int ret;
     int msgid;
 
-    req = tevent_req_create(mem_ctx, &state, struct ipa_s2n_exop_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct ipa_s2n_exop_state);
     if (!req) return NULL;
 
     state->sh = sh;
@@ -1210,7 +1210,7 @@ static struct tevent_req *ipa_s2n_get_list_send(TALLOC_CTX *mem_ctx,
     struct ipa_s2n_get_list_state *state;
     struct tevent_req *req;
 
-    req = tevent_req_create(mem_ctx, &state, struct ipa_s2n_get_list_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct ipa_s2n_get_list_state);
     if (req == NULL) {
         return NULL;
     }
@@ -1603,7 +1603,7 @@ struct tevent_req *ipa_s2n_get_acct_info_send(TALLOC_CTX *mem_ctx,
     const char *input;
     int ret = EFAULT;
 
-    req = tevent_req_create(mem_ctx, &state, struct ipa_s2n_get_user_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct ipa_s2n_get_user_state);
     if (req == NULL) {
         return NULL;
     }
@@ -3072,10 +3072,10 @@ struct tevent_req *ipa_get_subdom_acct_process_pac_send(TALLOC_CTX *mem_ctx,
     size_t num_sids;
     char **group_sids;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct ipa_get_subdom_acct_process_pac_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "tevent_req_create failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "be_tevent_req_create failed.\n");
         return NULL;
     }
 

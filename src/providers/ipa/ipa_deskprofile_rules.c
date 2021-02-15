@@ -73,9 +73,9 @@ ipa_deskprofile_rule_info_send(TALLOC_CTX *mem_ctx,
     char **groups_list;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state, struct ipa_deskprofile_rule_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct ipa_deskprofile_rule_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create failed.\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create failed.\n");
         return NULL;
     }
 

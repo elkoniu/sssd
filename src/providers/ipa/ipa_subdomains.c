@@ -1119,10 +1119,10 @@ ipa_subdomains_ranges_send(TALLOC_CTX *mem_ctx,
                             IPA_ID_RANGE_SIZE, IPA_TRUSTED_DOMAIN_SID,
                             IPA_RANGE_TYPE, NULL };
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct ipa_subdomains_ranges_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -1236,10 +1236,10 @@ ipa_subdomains_certmap_send(TALLOC_CTX *mem_ctx,
                             IPA_CERTMAP_PROMPT_USERNAME,
                             NULL };
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct ipa_subdomains_certmap_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -1349,10 +1349,10 @@ ipa_subdomains_master_send(TALLOC_CTX *mem_ctx,
     const char *attrs[] = { IPA_CN, IPA_FLATNAME, IPA_SID,
                             IPA_ADDITIONAL_SUFFIXES, NULL };
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct ipa_subdomains_master_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -1509,10 +1509,10 @@ ipa_subdomains_slave_send(TALLOC_CTX *mem_ctx,
                             IPA_TRUST_DIRECTION, IPA_ADDITIONAL_SUFFIXES,
                             IPA_SID_BLACKLIST_INCOMING, NULL };
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct ipa_subdomains_slave_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -1748,10 +1748,10 @@ ipa_subdomains_view_name_send(TALLOC_CTX *mem_ctx,
     const char *attrs[] = {IPA_CN, OBJECTCLASS, NULL};
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct ipa_subdomains_view_name_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -1911,10 +1911,10 @@ ipa_subdomains_view_domain_resolution_order_send(
     char *base;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                     struct ipa_subdomains_view_domain_resolution_order_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -2051,10 +2051,10 @@ ipa_domain_resolution_order_send(TALLOC_CTX *mem_ctx,
     const char *attrs[] = {IPA_DOMAIN_RESOLUTION_ORDER, NULL};
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct ipa_domain_resolution_order_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -2168,7 +2168,7 @@ kdcinfo_from_server_list_send(TALLOC_CTX *mem_ctx,
     int server_list_len;
     char **server_list;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct kdcinfo_from_server_list_state);
     if (req == NULL) {
         return NULL;
@@ -2298,7 +2298,7 @@ kdcinfo_from_site_send(TALLOC_CTX *mem_ctx,
     struct tevent_req *subreq;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct kdcinfo_from_site_state);
     if (req == NULL) {
         return NULL;
@@ -2475,7 +2475,7 @@ ipa_subdomains_write_kdcinfo_send(TALLOC_CTX *mem_ctx,
     struct tevent_req *req;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct ipa_subdomains_write_kdcinfo_state);
     if (req == NULL) {
         return NULL;
@@ -2777,10 +2777,10 @@ ipa_subdomains_refresh_send(TALLOC_CTX *mem_ctx,
     struct tevent_req *req;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct ipa_subdomains_refresh_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -3143,10 +3143,10 @@ ipa_subdomains_handler_send(TALLOC_CTX *mem_ctx,
     struct tevent_req *subreq;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct ipa_subdomains_handler_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 

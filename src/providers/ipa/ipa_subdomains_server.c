@@ -434,7 +434,7 @@ static struct tevent_req *ipa_getkeytab_send(TALLOC_CTX *mem_ctx,
     pid_t child_pid;
     struct timeval tv;
 
-    req = tevent_req_create(mem_ctx, &state, struct ipa_getkeytab_state);
+    req = be_tevent_req_create(mem_ctx, &state, struct ipa_getkeytab_state);
     if (req == NULL) {
         return NULL;
     }
@@ -664,7 +664,7 @@ ipa_server_trusted_dom_setup_send(TALLOC_CTX *mem_ctx,
     struct ipa_server_trusted_dom_setup_state *state = NULL;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct ipa_server_trusted_dom_setup_state);
     if (req == NULL) {
         return NULL;
@@ -872,7 +872,7 @@ ipa_server_create_trusts_send(TALLOC_CTX *mem_ctx,
     struct ipa_server_create_trusts_state *state = NULL;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct ipa_server_create_trusts_state);
     if (req == NULL) {
         return NULL;

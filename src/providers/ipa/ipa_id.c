@@ -76,10 +76,10 @@ ipa_resolve_user_list_send(TALLOC_CTX *memctx, struct tevent_context *ev,
     struct tevent_req *req;
     struct ipa_resolve_user_list_state *state;
 
-    req = tevent_req_create(memctx, &state,
+    req = be_tevent_req_create(memctx, &state,
                             struct ipa_resolve_user_list_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "tevent_req_create failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "be_tevent_req_create failed.\n");
         return NULL;
     }
 
@@ -244,10 +244,10 @@ ipa_initgr_get_overrides_send(TALLOC_CTX *memctx,
     struct tevent_req *req;
     struct ipa_initgr_get_overrides_state *state;
 
-    req = tevent_req_create(memctx, &state,
+    req = be_tevent_req_create(memctx, &state,
                             struct ipa_initgr_get_overrides_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "tevent_req_create failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "be_tevent_req_create failed.\n");
         return NULL;
     }
     state->ev = ev;
@@ -519,10 +519,10 @@ ipa_id_get_account_info_send(TALLOC_CTX *memctx, struct tevent_context *ev,
     struct tevent_req *subreq;
     struct ipa_id_get_account_info_state *state;
 
-    req = tevent_req_create(memctx, &state,
+    req = be_tevent_req_create(memctx, &state,
                             struct ipa_id_get_account_info_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "tevent_req_create failed.\n");
+        BE_REQ_DEBUG(SSSDBG_OP_FAILURE, req, "be_tevent_req_create failed.\n");
         return NULL;
     }
 
@@ -1181,7 +1181,7 @@ static struct tevent_req *ipa_id_get_netgroup_send(TALLOC_CTX *memctx,
 
     ctx = ipa_ctx->sdap_id_ctx;
 
-    req = tevent_req_create(memctx, &state, struct ipa_id_get_netgroup_state);
+    req = be_tevent_req_create(memctx, &state, struct ipa_id_get_netgroup_state);
     if (!req) return NULL;
 
     state->ev = ev;
@@ -1373,10 +1373,10 @@ ipa_account_info_send(TALLOC_CTX *mem_ctx,
     struct tevent_req *subreq = NULL;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct ipa_account_info_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
@@ -1480,10 +1480,10 @@ ipa_account_info_handler_send(TALLOC_CTX *mem_ctx,
     struct tevent_req *req;
     errno_t ret;
 
-    req = tevent_req_create(mem_ctx, &state,
+    req = be_tevent_req_create(mem_ctx, &state,
                             struct ipa_account_info_handler_state);
     if (req == NULL) {
-        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "tevent_req_create() failed\n");
+        BE_REQ_DEBUG(SSSDBG_CRIT_FAILURE, req, "be_tevent_req_create() failed\n");
         return NULL;
     }
 
