@@ -176,9 +176,6 @@ void talloc_log_fn(const char *msg);
 #define SSS_LOG_INFO    6   /* informational */
 #define SSS_LOG_DEBUG   7   /* debug-level messages */
 
-#define BE_REQ_DEBUG(level, req, fmt, ...) \
-    if (DEBUG_IS_SET(level)) DEBUG(level, "BE_REQ [%s]: " fmt "\n", find_req_name(req), ##__VA_ARGS__)
-
 void sss_log(int priority, const char *format, ...) SSS_ATTRIBUTE_PRINTF(2, 3);
 void sss_log_ext(int priority, int facility, const char *format, ...) SSS_ATTRIBUTE_PRINTF(3, 4);
 
@@ -795,6 +792,36 @@ errno_t create_preauth_indicator(void);
 #define N_ELEMENTS(arr) (sizeof(arr) / sizeof(arr[0]))
 #endif
 
-const char * find_req_name(void *mem_ctx);
+const char *find_req_name(void *mem_ctx);
+void dump_talloc_tree(void *mem_ctx);
+
+/* Backend debug macro preserving client ID in log message */
+#define BE_REQ_DEBUG(level, req, fmt, ...) \
+        if (DEBUG_IS_SET(level)) DEBUG(level, "BE_REQ [%s]: " fmt "\n", find_req_name(req), ##__VA_ARGS__)
+
+/* Data structure to preserve client request ID across tevent calls */
+struct client_req_id {
+    const char *id;
+};
+
+/* Helper function to hook extra operations during tevent_req_create() */
+struct tevent_req *be_req_create(TALLOC_CTX *mem_ctx,
+				      void *pstate,
+				      size_t state_size,
+				      const char *type,
+				      const char *location);
+
+/* Wrapper for tevent_req_create() which should be used on backend */
+#define be_tevent_req_create(_mem_ctx, _pstate, _type) \
+        be_req_create((_mem_ctx), (_pstate), sizeof(_type), \
+                      #_type, __location__)
+
+
+/* Helper function to hook extra operations during tevent_req_data() */
+void *be_req_data(struct tevent_req *req);
+
+/* Wrapper for tevent_req_data() which should be used on backend */
+#define be_tevent_req_data(_req, _type) \
+        talloc_get_type_abort(be_req_data(_req), _type)
 
 #endif /* __SSSD_UTIL_H__ */
