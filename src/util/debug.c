@@ -25,6 +25,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#include <tevent.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -310,7 +311,8 @@ void sss_vdebug_fn(const char *file,
         debug_printf("): ");
     }
 
-    debug_printf("[%s] [%s] (%#.4x): ", debug_prg_name, function, level);
+    debug_printf("[%s] [#%u] [%s] (%#.4x): ",
+                 debug_prg_name, tevent_req_get_chain_id(), function, level);
 
     debug_vprintf(format, ap);
     if (flags & APPEND_LINE_FEED) {

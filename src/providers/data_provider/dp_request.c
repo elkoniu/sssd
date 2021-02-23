@@ -203,6 +203,7 @@ file_dp_request(TALLOC_CTX *mem_ctx,
     dp_req_send_fn send_fn;
     struct dp_req *dp_req;
     struct be_ctx *be_ctx;
+    uint32_t old_chain_id;
     errno_t ret;
 
     be_ctx = provider->be_ctx;
@@ -247,8 +248,13 @@ file_dp_request(TALLOC_CTX *mem_ctx,
     dp_params->method = dp_req->method;
 
     send_fn = dp_req->execute->send_fn;
+    /* Copy tevent debug context */
+    old_chain_id = tevent_req_set_chain_id(dp_req->num);
+    DEBUG(SSSDBG_TRACE_FUNC, "CHAIN_ID set to: %u\n", dp_req->num);
     dp_req->handler_req = send_fn(dp_req, dp_req->execute->method_data,
                                   dp_req->request_data, dp_params);
+    /* Restore original tevent debug context */
+    tevent_req_set_chain_id(old_chain_id);
     if (dp_req->handler_req == NULL) {
         ret = ENOMEM;
         goto done;
