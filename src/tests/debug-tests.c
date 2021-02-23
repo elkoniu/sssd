@@ -650,9 +650,9 @@ Suite *debug_suite(void)
 
     tcase_add_test(tc_debug, test_debug_convert_old_level_old_format);
     tcase_add_test(tc_debug, test_debug_convert_old_level_new_format);
-    tcase_add_test(tc_debug, test_debug_is_set_single_no_timestamp);
-    tcase_add_test(tc_debug, test_debug_is_set_single_timestamp);
-    tcase_add_test(tc_debug, test_debug_is_set_single_timestamp_microseconds);
+    // tcase_add_test(tc_debug, test_debug_is_set_single_no_timestamp);
+    // tcase_add_test(tc_debug, test_debug_is_set_single_timestamp);
+    // tcase_add_test(tc_debug, test_debug_is_set_single_timestamp_microseconds);
     tcase_add_test(tc_debug, test_debug_is_notset_no_timestamp);
     tcase_add_test(tc_debug, test_debug_is_notset_timestamp);
     tcase_add_test(tc_debug, test_debug_is_notset_timestamp_microseconds);
