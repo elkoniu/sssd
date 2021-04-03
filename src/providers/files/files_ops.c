@@ -814,6 +814,7 @@ static int sf_passwd_cb(const char *filename, uint32_t flags, void *pvt)
     }
 
     DEBUG(SSSDBG_TRACE_FUNC, "passwd notification\n");
+    DEBUG(SSSDBG_FUNC_DATA, ">>>PASSWD_MODIFIED_CB\n");
 
     id_ctx->updating_passwd = true;
     dp_sbus_domain_inconsistent(id_ctx->be->provider, id_ctx->domain);
@@ -853,6 +854,7 @@ static int sf_group_cb(const char *filename, uint32_t flags, void *pvt)
     }
 
     DEBUG(SSSDBG_TRACE_FUNC, "group notification\n");
+    DEBUG(SSSDBG_FUNC_DATA, ">>>GROUP_MODIFIED_CB\n");
 
     id_ctx->updating_groups = true;
     dp_sbus_domain_inconsistent(id_ctx->be->provider, id_ctx->domain);

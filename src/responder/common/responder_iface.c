@@ -53,6 +53,8 @@ sss_resp_domain_active(TALLOC_CTX *mem_ctx,
                        struct resp_ctx *rctx,
                        const char *domain_name)
 {
+    DEBUG(SSSDBG_FUNC_DATA, ">>>DOMAIN_ACTIVE_RECEIVED\n");
+
     DEBUG(SSSDBG_TRACE_LIBS, "Enabling domain %s\n", domain_name);
 
     set_domain_state_by_name(rctx, domain_name, DOM_ACTIVE);
@@ -66,6 +68,8 @@ sss_resp_domain_inconsistent(TALLOC_CTX *mem_ctx,
                              struct resp_ctx *rctx,
                              const char *domain_name)
 {
+    DEBUG(SSSDBG_FUNC_DATA, ">>>DOMAIN_INCONSISTENT_RECEIVED\n");
+
     DEBUG(SSSDBG_TRACE_LIBS, "Disabling domain %s\n", domain_name);
 
     set_domain_state_by_name(rctx, domain_name, DOM_INCONSISTENT);
@@ -78,6 +82,8 @@ sss_resp_reset_ncache_users(TALLOC_CTX *mem_ctx,
                             struct sbus_request *sbus_req,
                             struct resp_ctx *rctx)
 {
+    DEBUG(SSSDBG_FUNC_DATA, ">>>RESET_NCACHE_USERS_RECEIVED\n");
+
     sss_ncache_reset_users(rctx->ncache);
 
     return EOK;
@@ -88,6 +94,8 @@ sss_resp_reset_ncache_groups(TALLOC_CTX *mem_ctx,
                             struct sbus_request *sbus_req,
                             struct resp_ctx *rctx)
 {
+    DEBUG(SSSDBG_FUNC_DATA, ">>>RESET_NCACHE_GROUPS_RECEIVED\n");
+
     sss_ncache_reset_groups(rctx->ncache);
 
     return EOK;
