@@ -152,6 +152,7 @@ nss_memorycache_invalidate_users(TALLOC_CTX *mem_ctx,
                                  struct sbus_request *sbus_req,
                                  struct nss_ctx *nctx)
 {
+    DEBUG(SSSDBG_FUNC_DATA, ">>>INVALIDATE_USERS_RECEIVED\n");
     DEBUG(SSSDBG_TRACE_LIBS, "Invalidating all users in memory cache\n");
     sss_mmap_cache_reset(nctx->pwd_mc_ctx);
 
@@ -163,6 +164,7 @@ nss_memorycache_invalidate_groups(TALLOC_CTX *mem_ctx,
                                   struct sbus_request *sbus_req,
                                   struct nss_ctx *nctx)
 {
+    DEBUG(SSSDBG_FUNC_DATA, ">>>INVALIDATE_GROUPS_RECEIVED\n");
     DEBUG(SSSDBG_TRACE_LIBS, "Invalidating all groups in memory cache\n");
     sss_mmap_cache_reset(nctx->grp_mc_ctx);
 
@@ -174,6 +176,7 @@ nss_memorycache_invalidate_initgroups(TALLOC_CTX *mem_ctx,
                                       struct sbus_request *sbus_req,
                                       struct nss_ctx *nctx)
 {
+    DEBUG(SSSDBG_FUNC_DATA, ">>>INVALIDATE_INITGROUPS_RECEIVED\n");
     DEBUG(SSSDBG_TRACE_LIBS,
           "Invalidating all initgroup records in memory cache\n");
     sss_mmap_cache_reset(nctx->initgr_mc_ctx);
