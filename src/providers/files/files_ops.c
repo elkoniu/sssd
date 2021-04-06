@@ -251,6 +251,8 @@ static errno_t delete_all_users(struct sss_domain_info *dom)
     struct ldb_dn *base_dn;
     errno_t ret;
 
+    DEBUG(SSSDBG_FUNC_DATA, "### USERS DELETE STARTED\n");
+
     tmp_ctx = talloc_new(NULL);
     if (tmp_ctx == NULL) {
         DEBUG(SSSDBG_FATAL_FAILURE, "Out of memory!\n");
@@ -272,6 +274,8 @@ static errno_t delete_all_users(struct sss_domain_info *dom)
     }
 
     ret = EOK;
+
+    DEBUG(SSSDBG_FUNC_DATA, "### USERS DELETE FINISHED\n");
 
 done:
     talloc_free(tmp_ctx);
@@ -522,6 +526,8 @@ static errno_t delete_all_groups(struct sss_domain_info *dom)
     struct ldb_dn *base_dn;
     errno_t ret;
 
+    DEBUG(SSSDBG_FUNC_DATA, "### GROUPS DELETE STARTED\n");
+
     tmp_ctx = talloc_new(NULL);
     if (tmp_ctx == NULL) {
         DEBUG(SSSDBG_FATAL_FAILURE, "Out of memory!\n");
@@ -543,6 +549,8 @@ static errno_t delete_all_groups(struct sss_domain_info *dom)
     }
 
     ret = EOK;
+
+    DEBUG(SSSDBG_FUNC_DATA, "### GROUPS DELETE FINISHED\n");
 
 done:
     talloc_free(tmp_ctx);
@@ -703,6 +711,7 @@ done:
 }
 
 enum update_steps {
+    INIT_STEP,
     DELETE_USERS,
     READ_USERS,
     SAVE_USERS,
@@ -755,12 +764,7 @@ static struct tevent_req *sf_enum_files_send(struct files_id_ctx *id_ctx,
     state->file_idx = 0;
     state->initial_delay = 100;
     state->delay = 100;
-
-    if (state->flags & SF_UPDATE_PASSWD) {
-        state->current_step = DELETE_USERS;
-    } else if (state->flags & SF_UPDATE_GROUP) {
-        state->current_step = DELETE_GROUPS;
-    }
+    state->current_step = INIT_STEP;
 
     tv = tevent_timeval_current_ofs(0, state->initial_delay);
     state->te = tevent_add_timer(id_ctx->be->ev, state, tv,
@@ -770,12 +774,6 @@ static struct tevent_req *sf_enum_files_send(struct files_id_ctx *id_ctx,
         ret = EFAULT;
         goto done;
     }
-
-    ret = sysdb_transaction_start(id_ctx->domain->sysdb);
-    if (ret != EOK) {
-        goto done;
-    }
-    state->in_transaction = true;
 
     return req;
 
@@ -804,6 +802,18 @@ static void sf_enum_files_first_step(struct tevent_context *ev,
     id_ctx = state->id_ctx;
 
     switch (state->current_step) {
+    case INIT_STEP:
+        if (state->flags & SF_UPDATE_PASSWD) {
+            state->current_step = DELETE_USERS;
+        } else if (state->flags & SF_UPDATE_GROUP) {
+            state->current_step = DELETE_GROUPS;
+        }
+        ret = sysdb_transaction_start(id_ctx->domain->sysdb);
+        if (ret != EOK) {
+            goto done;
+        }
+        state->in_transaction = true;
+        break;
     case DELETE_USERS:
         DEBUG(SSSDBG_TRACE_ALL, "Step DELETE_USERS.\n");
         ret = delete_all_users(id_ctx->domain);
