@@ -69,7 +69,7 @@ void dp_sbus_domain_active(struct data_provider *provider,
     DEBUG(SSSDBG_TRACE_FUNC, "Ordering responders to enable domain %s\n",
           dom->name);
 
-    conn = provider->sbus_conn;
+    conn = provider->be_ctx->mon_conn;
     for (i = 0; all_clients[i] != NULL; i++) {
         bus = all_clients[i];
 
@@ -100,7 +100,7 @@ void dp_sbus_domain_inconsistent(struct data_provider *provider,
     DEBUG(SSSDBG_TRACE_FUNC, "Ordering responders to disable domain %s\n",
           dom->name);
 
-    conn = provider->sbus_conn;
+    conn = provider->be_ctx->mon_conn;
     for (i = 0; all_clients[i] != NULL; i++) {
         bus = all_clients[i];
         subreq = sbus_call_resp_domain_SetInconsistent_send(provider, conn,
@@ -130,7 +130,7 @@ void dp_sbus_reset_users_ncache(struct data_provider *provider,
     DEBUG(SSSDBG_TRACE_FUNC,
           "Ordering responders to reset user negative cache\n");
 
-    conn = provider->sbus_conn;
+    conn = provider->be_ctx->mon_conn;
     for (i = 0; user_clients[i] != NULL; i++) {
         bus = user_clients[i];
         subreq = sbus_call_resp_negcache_ResetUsers_send(provider, conn, bus,
@@ -160,7 +160,7 @@ void dp_sbus_reset_groups_ncache(struct data_provider *provider,
     DEBUG(SSSDBG_TRACE_FUNC,
           "Ordering responders to reset group negative cache\n");
 
-    conn = provider->sbus_conn;
+    conn = provider->be_ctx->mon_conn;
     for (i = 0; user_clients[i] != NULL; i++) {
         bus = user_clients[i];
 
@@ -188,7 +188,7 @@ void dp_sbus_reset_users_memcache(struct data_provider *provider)
           "Ordering NSS responder to invalidate the users\n");
 
     subreq = sbus_call_nss_memcache_InvalidateAllUsers_send(provider,
-                 provider->sbus_conn, SSS_BUS_NSS, SSS_BUS_PATH);
+                 provider->be_ctx->mon_conn, SSS_BUS_NSS, SSS_BUS_PATH);
     if (subreq == NULL) {
         DEBUG(SSSDBG_CRIT_FAILURE, "Unable to create subrequest!\n");
         return;
@@ -212,7 +212,7 @@ void dp_sbus_reset_groups_memcache(struct data_provider *provider)
           "Ordering NSS responder to invalidate the groups\n");
 
     subreq = sbus_call_nss_memcache_InvalidateAllGroups_send(provider,
-                 provider->sbus_conn, SSS_BUS_NSS, SSS_BUS_PATH);
+                 provider->be_ctx->mon_conn, SSS_BUS_NSS, SSS_BUS_PATH);
     if (subreq == NULL) {
         DEBUG(SSSDBG_CRIT_FAILURE, "Unable to create subrequest!\n");
         return;
@@ -236,7 +236,7 @@ void dp_sbus_reset_initgr_memcache(struct data_provider *provider)
           "Ordering NSS responder to invalidate the initgroups\n");
 
     subreq = sbus_call_nss_memcache_InvalidateAllInitgroups_send(provider,
-                 provider->sbus_conn, SSS_BUS_NSS, SSS_BUS_PATH);
+                 provider->be_ctx->mon_conn, SSS_BUS_NSS, SSS_BUS_PATH);
     if (subreq == NULL) {
         DEBUG(SSSDBG_CRIT_FAILURE, "Unable to create subrequest!\n");
         return;

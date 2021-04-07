@@ -181,6 +181,8 @@ sbus_method_handler(struct sbus_connection *conn,
     /* Mark this connection as active. */
     sbus_connection_mark_active(conn);
 
+    sbus_dump(router->paths, meta->path, meta->interface);
+
     iface = sbus_router_paths_lookup(router->paths, meta->path,
                                      meta->interface);
     if (iface == NULL) {
